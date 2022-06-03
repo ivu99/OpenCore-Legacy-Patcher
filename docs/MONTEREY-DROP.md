@@ -1,4 +1,4 @@
-# macOS Monterey Support
+![](../images/macos-monterey.png)
 
 With OpenCore Legacy Patcher v0.1.7 and newer, we've implemented beta macOS Monterey support for users. Please note that Apple has dropped a lot of hardware with this release as well as broken many of our previous patch sets. This page will be used to inform users regarding current issues and will be updated as new patch sets are developed and added to our patcher.
  
@@ -15,7 +15,29 @@ With Monterey, Apple continues their their somewhat ruthless march of dropping I
 * MacBookPro11,2
 * MacBookPro11,3
 
+::: details Model names
+
+* iMac (21.5-inch, Mid 2014)
+* iMac (Retina 5K, 27-inch, Late 2014)
+* MacBook (Retina, 12-inch, Early 2015)
+* MacBook Air (11-inch, Mid 2013)
+* MacBook Air (13-inch, Mid 2013)
+* MacBook Air (11-inch, Early 2014)
+* MacBook Air (13-inch, Early 2014)
+* MacBook Pro (Retina, 13-inch, Late 2013)
+* MacBook Pro (Retina, 15-inch, Late 2013)
+* MacBook Pro (Retina, 13-inch, Mid 2014)
+* MacBook Pro (Retina, 15-inch, Mid 2014)
+
+::: 
+
 All of these models now have support in OpenCore Legacy Patcher.
+
+## Current Monterey Issues
+
+### MacBookPro11,3 booting issue without Kepler acceleration
+
+Due to the display being routed through the NVIDIA Kepler card and macOS being rendered on the Intel iGPU, users have been experiencing issues booting without post-install patches applied ([see here for more info](https://github.com/dortania/OpenCore-Legacy-Patcher/issues/522).) Currently the only workaround is to install the patches in safe mode, by holding down `Shift+Enter` when you select macOS in the OCLP boot picker.
 
 ## Previously Broken Hardware
 
@@ -47,13 +69,14 @@ sudo killall -9 BlueTool bluetoothd
 
 * Broadcom BCM94328, BCM94322 and Atheros Wireless Chipsets lost support
 
-The following models lost Bluetooth support in macOS Monterey due to their legacy Wireless chipset:
+The following models lost Wifi support in macOS Monterey due to their legacy Wireless chipset:
 
 * iMac12,x and older
 * Macmini3,1 and older
 * MacBook5,x and older
 * MacBookAir2,1 and older
 * MacBookPro7,1 and older
+  * MacBookPro6,x is exempt
 * MacPro5,1 and older
 
 Note: BCM943224, BCM94331, BCM94360 and BCM943602 are still fully support by OpenCore Legacy Patcher
@@ -119,6 +142,7 @@ By default these machines require root volume patches to gain graphics accelerat
 
 * MacBookPro9,1
 * MacBookPro10,1
+* MacBookPro11,3
 * iMac13,x
 * iMac14,x
 
@@ -128,7 +152,7 @@ By default these machines require root volume patches to gain graphics accelerat
 
 * Non-Metal GPUs no longer have working acceleration patches:
   * Intel Ironlake and Sandy Bridge iGPUs
-  * Nvidia Tesla and Fermi GPUs
+  * NVIDIA Tesla and Fermi GPUs
   * AMD TeraScale 1 and 2 GPUs
 
 The following machines cannot gain graphics acceleration at all in Monterey, only basic framebuffer and brightness control (iMac8,1/9,1 and MacBook5,2 excluded):

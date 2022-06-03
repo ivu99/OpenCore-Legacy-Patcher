@@ -1,9 +1,8 @@
 # Handle misc CLI menu options
 # Copyright (C) 2020-2022, Dhinak G, Mykola Grymalyuk
-from __future__ import print_function
 import sys
 
-from resources import constants, install, utilities, defaults, sys_patch, installer
+from resources import constants, install, utilities, defaults, sys_patch, installer, tui_helpers, global_settings
 from data import cpu_data, smbios_data, model_array, os_data, mirror_data
 
 
@@ -67,7 +66,7 @@ Valid Options:
 1. None (stock GPU)
 2. Nvidia Kepler
 3. AMD Polaris
-4. AMD Legacy GCN 
+4. AMD Legacy GCN
 Q. Return to previous menu
 
 Note: Patcher will detect whether hardware has been upgraded regardless, this
@@ -174,7 +173,7 @@ Note: For security reasons, OpenShell will be disabled when Vault is set.
         print(
             f"""SIP is used to ensure proper secuirty measures are set,
 however to patch the root volume this must be lowered partially.
-Only disable is absolutely necessary. SIP value = 0xA03
+Only disable is absolutely necessary. SIP value = 0x802
 
 Valid options:
 
@@ -466,7 +465,34 @@ OpenCore will enable NVMe support in it's picker
             print("Returning to previous menu")
         else:
             self.allow_nvme()
-    
+
+    def allow_nvme_pwr_mgmt(self):
+        utilities.cls()
+        utilities.header(["Allow NVMe Power Management Adjustments"])
+        print(
+            """
+For machines with upgraded NVMe drives, this
+option allows for better power management support
+within macOS.
+
+Note that some NVMe drives don't support macOS's
+power management settings, and can result in boot
+issues. Disable this option if you experience
+IONVMeFamily kernel panics. Mainly applicable for
+Skylake and newer Macs.
+        """
+        )
+
+        change_menu = input("Enable NVMe Power Management?(y/n/q): ")
+        if change_menu in {"y", "Y", "yes", "Yes"}:
+            self.constants.allow_nvme_fixing = True
+        elif change_menu in {"n", "N", "no", "No"}:
+            self.constants.allow_nvme_fixing = False
+        elif change_menu in {"q", "Q", "Quit", "quit"}:
+            print("Returning to previous menu")
+        else:
+            self.allow_nvme()
+
     def allow_xhci(self):
         utilities.cls()
         utilities.header(["Allow NVMe UEFI Support"])
@@ -518,107 +544,6 @@ be prepared if enabling.
         else:
             self.allow_wowl()
 
-    def allow_ivy(self):
-        utilities.cls()
-        utilities.header(["Allow Ivy iMac iGPU"])
-        print(
-            """
-For iMac13,x systems with a Nvidia dGPU, the iGPU is disabled by default to
-allow Delta Updates, FileVault, SIP and such on macOS Monterey. However due to
-this, DRM and QuickSync support may be broken.
-
-Users can choose to override this option but be aware SIP must be
-disabled to run root patches to fix DRM and QuickSync.
-
-Note: This does not apply for Big Sur, the iGPU can be renabled without
-consequence
-Note 2: This setting only affects iMac13,x with dGPUs
-        """
-        )
-
-        change_menu = input("Allow Ivy iMac iGPU?(y/n/q): ")
-        if change_menu in {"y", "Y", "yes", "Yes"}:
-            self.constants.allow_ivy_igpu = True
-        elif change_menu in {"n", "N", "no", "No"}:
-            self.constants.allow_ivy_igpu = False
-        elif change_menu in {"q", "Q", "Quit", "quit"}:
-            print("Returning to previous menu")
-        else:
-            self.allow_ivy()
-
-    def latebloom_settings(self):
-        utilities.cls()
-        utilities.header(["Set latebloom properties"])
-        print(
-            f"""
-Set latebloom properties, useful for debugging boot stalls on
-pre-Sandy Bridge Macs.
-
-Valid options:
-
-1. Set delay (currently: {self.constants.latebloom_delay}ms)
-2. Set range (currently: {self.constants.latebloom_range}ms)
-3. Set debug (currently: {bool(self.constants.latebloom_debug)})
-Q. Return to previous menu
-        """
-        )
-
-        change_menu = input("Select latebloom property(1/2/3): ")
-        if change_menu == "1":
-            try:
-                self.constants.latebloom_delay = int(input("Set delay: "))
-            except ValueError:
-                input("Invalid value, press [ENTER] to continue")
-            self.latebloom_settings()
-        elif change_menu == "2":
-            try:
-                self.constants.latebloom_range = int(input("Set range: "))
-            except ValueError:
-                input("Invalid value, press [ENTER] to continue")
-            self.latebloom_settings()
-        elif change_menu == "3":
-            try:
-                print("Currently supports either 0(False) or 1(True)")
-                latebloom_debug = int(input("Set debug(0/1): "))
-                if latebloom_debug not in [0, 1]:
-                    input("Invalid value, press [ENTER] to continue")
-                else:
-                    self.constants.latebloom_debug = latebloom_debug
-            except ValueError:
-                input("Invalid value, press [ENTER] to continue")
-            self.latebloom_settings()
-        elif change_menu in {"q", "Q", "Quit", "quit"}:
-            print("Returning to previous menu")
-        else:
-            self.latebloom_settings()
-
-    def allow_moj_cat_patch(self):
-        utilities.cls()
-        utilities.header(["Allow Root Patching on Mojave/Catalina"])
-        print(
-            """
-This is an experimental option that allows the usage of legacy acceleration
-patches in Mojave and Catalina.
-
-The main goal of this is to allow developers to better test patch sets as well
-as allow acceleration on TeraScale 2 machines. Not all features may be available
-(ie. GPU switching may not work, etc)
-
-Note: for the average user, we recommend using dosdude1's legacy patcher:
-
-- http://dosdude1.com/software.html
-        """
-        )
-
-        change_menu = input("Allow Root Patching on Mojave/Catalina?(y/n/q): ")
-        if change_menu in {"y", "Y", "yes", "Yes"}:
-            self.constants.moj_cat_accel = True
-        elif change_menu in {"n", "N", "no", "No"}:
-            self.constants.moj_cat_accel = False
-        elif change_menu in {"q", "Q", "Quit", "quit"}:
-            print("Returning to previous menu")
-        else:
-            self.allow_moj_cat_patch()
 
     def disable_tb(self):
         utilities.cls()
@@ -628,7 +553,7 @@ Note: for the average user, we recommend using dosdude1's legacy patcher:
 Some 2013-14 MacBook Pro's have issues with the built-in thunderbolt,
 resulting in kernel panics and random shutdowns.
 
-To alliviate, you can disable the thunderbolt controller on MacBookPro11,x 
+To alliviate, you can disable the thunderbolt controller on MacBookPro11,x
 machines with this option.
 
 Note: This option only works on MacBookPro11,x, file an issue if you know of
@@ -663,8 +588,10 @@ handle acceleration tasks.
 
         change_menu = input("Allow TeraScale 2 Acceleration?(y/n/q): ")
         if change_menu in {"y", "Y", "yes", "Yes"}:
+            global_settings.global_settings().write_property("MacBookPro_TeraScale_2_Accel", True)
             self.constants.allow_ts2_accel = True
         elif change_menu in {"n", "N", "no", "No"}:
+            global_settings.global_settings().write_property("MacBookPro_TeraScale_2_Accel", False)
             self.constants.allow_ts2_accel = False
         elif change_menu in {"q", "Q", "Quit", "quit"}:
             print("Returning to previous menu")
@@ -722,7 +649,7 @@ for Windows may prefer to only work with the dGPU and eGPU active.
             print("Returning to previous menu")
         else:
             self.dGPU_switch_support()
-    
+
     def set_3rd_party_drices(self):
         utilities.cls()
         utilities.header(["Set enhanced 3rd Party SSD Support"])
@@ -745,7 +672,7 @@ TRIM is not ideal.
             print("Returning to previous menu")
         else:
             self.set_3rd_party_drices()
-    
+
     def set_software_demux(self):
         utilities.cls()
         utilities.header(["Set Software Demux"])
@@ -773,23 +700,23 @@ https://dortania.github.io/OpenCore-Legacy-Patcher/ACCEL.html#unable-to-switch-g
             print("Returning to previous menu")
         else:
             self.set_software_demux()
-    
+
     def set_battery_throttle(self):
         utilities.cls()
         utilities.header(["Disable Firmware Throttling"])
         print(
             """
 By default on Nehalem and newer Macs, the firmware will throttle if
-the battery is either dead or missing. The firmware will set
+the battery or Display is either dead or missing. The firmware will set
 'BD PROCHOT' to notify the OS the machine needs to run in an extreme
 low power mode.
 
 Enabling this option will patch 'MSR_POWER_CTL' to be unset allowing
-proper CPU behaviour as if battery is present. Note that this can cause
-instability in situations where the CPU is being taxed and pulls more 
-power than the PSU can supply.
+proper CPU behaviour as if hardware is present. Note that this can cause
+instability in situations where the CPU is being taxed and pulls more
+power than the laptop's PSU can supply.
 
-Note: Only supported on Nehalem and newer MacBooks (2010+)
+Note: Only supported on Nehalem and newer Macs (2010+)
         """
         )
 
@@ -803,6 +730,32 @@ Note: Only supported on Nehalem and newer MacBooks (2010+)
         else:
             self.set_battery_throttle()
 
+    def set_xcpm(self):
+        utilities.cls()
+        utilities.header(["Disable XCPM"])
+        print(
+            """
+By default on Ivy Bridge EP and newer Macs, the system will throttle if
+the battery or Display is either dead or missing. Apple's XCPM will set
+'BD PROCHOT' to avoid damage to the system.
+
+Enabling this option will disable Apple's XNU CPU Power Management (XCPM)
+and fall back onto the older ACPI_SMC_PlatformPlugin.kext.
+
+Note: Only supported on Ivy Bridge EP and newer Macs (2013+)
+        """
+        )
+
+        change_menu = input("Disable XCPM?(y/n/q): ")
+        if change_menu in {"y", "Y", "yes", "Yes"}:
+            self.constants.disable_xcpm = True
+        elif change_menu in {"n", "N", "no", "No"}:
+            self.constants.disable_xcpm = False
+        elif change_menu in {"q", "Q", "Quit", "quit"}:
+            print("Returning to previous menu")
+        else:
+            self.set_xcpm()
+
     def set_surplus(self):
         utilities.cls()
         utilities.header(["Override SurPlus MaxKernel"])
@@ -812,7 +765,7 @@ By default OCLP will only allow SurPlus to be used on Big Sur and Monterey.
 This is for safety reasons in the event newer OSes may break compatibility
 and result in boot loops.
 
-Enabling this option will allow SurPlus to have no MaxKernel set, and 
+Enabling this option will allow SurPlus to have no MaxKernel set, and
 therefore allow it to run on anything newer than 11.2.3. However if you
 do toggle this setting, ensure you have a known-good OS to return to in
 the event there's issues.
@@ -828,17 +781,17 @@ the event there's issues.
             print("Returning to previous menu")
         else:
             self.set_surplus()
-    
+
     def set_hibernation_workaround(self):
         utilities.cls()
         utilities.header(["Set Hibernation Workaround"])
         print(
             """
 For users with Hibernation issues, you can flip this option to disable certain
-OpenCore settings that may affect the stability of Hibernation. Namely 
+OpenCore settings that may affect the stability of Hibernation. Namely
 OpenCore's ConnectDrivers option.
 
-Flipping this setting will disable automatic loading of additional drives in 
+Flipping this setting will disable automatic loading of additional drives in
 OpenCore's boot menu other than what was booted.
 
 Note: This option should only be flipped under the following circumstances:
@@ -859,7 +812,7 @@ Note: This option should only be flipped under the following circumstances:
             print("Returning to previous menu")
         else:
             self.set_hibernation_workaround()
-    
+
     def set_custom_sip_value(self):
         utilities.cls()
         utilities.header(["Set Custom SIP Value"])
@@ -881,7 +834,7 @@ To disable SIP outright, set it to 0xFEF
         except ValueError:
             print("Invalid input, returning to previous menu")
             self.set_custom_sip_value()
-    
+
     def set_fu_settings(self):
         utilities.cls()
         utilities.header(["Set FeatureUnlock Settings"])
@@ -917,7 +870,7 @@ Supported Options:
         else:
             print("Invalid input, returning to previous menu")
             self.set_fu_settings()
-    
+
     def set_allow_native_spoofs(self):
         utilities.cls()
         utilities.header(["Allow Native Spoofs"])
@@ -941,7 +894,7 @@ available however not officially supported.
             print("Returning to previous menu")
         else:
             self.set_allow_native_spoofs()
-    
+
     def set_nvram_write(self):
         utilities.cls()
         utilities.header(["Set NVRAM Write"])
@@ -966,8 +919,28 @@ Supported Options:
             print("Invalid input, returning to previous menu")
             self.set_nvram_write()
 
+    def set_cc_support(self):
+        utilities.cls()
+        utilities.header(["Set Content Caching Support"])
+        print(
+            """
+On systems spoofing via VMM, Content Caching is disabled by
+default by Apple. This option allows you to mask VMM from
+AssetCache.
+            """
+        )
+        change_menu = input("Set Content Caching Support (y/n/q): ")
+        if change_menu in ["y", "Y", "yes", "Yes"]:
+            self.constants.set_content_caching = True
+        elif change_menu in ["n", "N", "no", "No"]:
+            self.constants.set_content_caching = False
+        elif change_menu in ["q", "Q", "Quit", "quit"]:
+            print("Returning to previous menu")
+        else:
+            self.set_cc_support()
+
     def credits(self):
-        utilities.TUIOnlyPrint(
+        tui_helpers.TUIOnlyPrint(
             ["Credits"],
             "Press [Enter] to go back.\n",
             [
@@ -1022,18 +995,15 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
             print(MenuOptions.monterey)
         elif self.constants.detected_os == os_data.os_data.big_sur:
             print(MenuOptions.big_sur)
-        elif self.constants.detected_os in [os_data.os_data.mojave, os_data.os_data.catalina] and self.constants.moj_cat_accel == True:
-            print(MenuOptions.mojave_catalina)
-            no_unpatch = True
         else:
             print(MenuOptions.default)
             no_patch = True
             no_unpatch = True
         change_menu = input("Patch System Volume?: ")
         if no_patch is not True and change_menu == "1":
-            sys_patch.PatchSysVolume(self.constants.custom_model or self.constants.computer.real_model, self.constants).start_patch()
+            sys_patch.PatchSysVolume(self.constants.custom_model or self.constants.computer.real_model, self.constants, None).start_patch()
         elif no_unpatch is not True and change_menu == "2":
-            sys_patch.PatchSysVolume(self.constants.custom_model or self.constants.computer.real_model, self.constants).start_unpatch()
+            sys_patch.PatchSysVolume(self.constants.custom_model or self.constants.computer.real_model, self.constants, None).start_unpatch()
         else:
             print("Returning to main menu")
 
@@ -1041,7 +1011,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Advanced Patcher Settings, for developers ONLY"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 [f"Set Metal GPU Status:\t\tCurrently {self.constants.imac_vendor}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_metal],
                 [f"Set DRM Preferences:\t\tCurrently {self.constants.drm_support}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).drm_setting],
@@ -1061,7 +1031,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Patcher Settings"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 ["Debug Settings", self.patcher_setting_debug],
                 ["Security Settings", self.patcher_settings_security],
@@ -1069,10 +1039,6 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
                 ["Boot Volume Settings", self.patcher_settings_boot],
                 ["Miscellaneous Settings", self.patcher_settings_misc],
                 ["Dump detected hardware", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).dump_hardware],
-                [
-                    f"Allow Accel on Mojave/Catalina:\tCurrently {self.constants.moj_cat_accel}",
-                    MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_moj_cat_patch,
-                ],
                 [
                     f"Allow OpenCore on native Models:\tCurrently {self.constants.allow_oc_everywhere}",
                     MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_native_models,
@@ -1089,7 +1055,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Debug Settings"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 [f"Enable Verbose Mode:\tCurrently {self.constants.verbose_debug}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_verbose],
                 [f"Enable OpenCore DEBUG:\tCurrently {self.constants.opencore_debug}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_oc],
@@ -1109,7 +1075,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Security Settings"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 # [
                 #     f"Set Apple Mobile File Integrity (AMFI):\tCurrently {self.constants.amfi_status}",
@@ -1135,7 +1101,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust SMBIOS Settings"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 [f"Set SMBIOS Spoof Level:\tCurrently {self.constants.serial_settings}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_serial],
                 [f"Set SMBIOS Spoof Model:\tCurrently {self.constants.override_smbios}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_smbios],
@@ -1152,11 +1118,12 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Bootable Volume Settings"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
-                [f"Set FireWire Boot:\tCurrently {self.constants.firewire_boot}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_firewire],
-                [f"Set NVMe Boot:\tCurrently {self.constants.nvme_boot}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_nvme],
-                [f"Set XHCI Boot:\tCurrently {self.constants.xhci_boot}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_xhci],
+                [f"Set FireWire Boot:\t\tCurrently {self.constants.firewire_boot}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_firewire],
+                [f"Set XHCI Boot:\t\tCurrently {self.constants.xhci_boot}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_xhci],
+                [f"Set NVMe Boot:\t\tCurrently {self.constants.nvme_boot}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_nvme],
+                [f"Set NVMe Power Management:\tCurrently {self.constants.allow_nvme_fixing}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_nvme_pwr_mgmt],
             ]
 
             for option in options:
@@ -1168,11 +1135,10 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Miscellaneous Settings"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 [f"Set ShowPicker Mode:\tCurrently {self.constants.showpicker}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_showpicker],
                 [f"Set Wake on WLAN:\t\tCurrently {self.constants.enable_wake_on_wlan}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_wowl],
-                [f"Set Ivy iMac iGPU:\t\tCurrently {self.constants.allow_ivy_igpu}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).allow_ivy],
                 [
                     f"Set TeraScale 2 Accel:\tCurrently {self.constants.allow_ts2_accel}",
                     MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).terascale_2_accel,
@@ -1188,10 +1154,12 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
                 ],
                 [f"Set Hibernation Workaround:\tCurrently {self.constants.disable_connectdrivers}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_hibernation_workaround],
                 [f"Disable Battery Throttling:\tCurrently {self.constants.disable_msr_power_ctl}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_battery_throttle],
+                [f"Disable XCPM:\t\tCurrently {self.constants.disable_xcpm}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_xcpm],
                 [f"Set Software Demux:\tCurrently {self.constants.software_demux}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_software_demux],
                 [f"Set 3rd Party SSD Support:\tCurrently {self.constants.allow_3rd_party_drives}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_3rd_party_drices],
                 [f"Set FeatureUnlock: \tCurrently {self.constants.fu_status}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_fu_settings],
                 [f"Set NVRAM Write:\t\tCurrently {self.constants.nvram_write}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_nvram_write],
+                [f"Set Content Caching:\tCurrently {self.constants.set_content_caching}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_cc_support],
             ]
 
             for option in options:
@@ -1203,7 +1171,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
         response = None
         while not (response and response == -1):
             title = ["Adjust Advanced Patcher Settings, for developers ONLY"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
                 [f"Set Metal GPU Status:\t\tCurrently {self.constants.imac_vendor}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_metal],
                 [f"Set DRM Preferences:\t\tCurrently {self.constants.drm_support}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).drm_setting],
@@ -1218,7 +1186,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
                 menu.add_menu_option(option[0], function=option[1])
 
             response = menu.start()
-    
+
     def download_macOS(self):
         utilities.cls()
         utilities.header(["Create macOS installer"])
@@ -1252,41 +1220,41 @@ B. Exit
             print("Failed to start download")
             input("Press any key to continue...")
 
-    
+
     def download_macOS_installer(self):
         response = None
         while not (response and response == -1):
             options = []
             title = ["Select the macOS Installer you wish to download"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
-            avalible_installers = installer.list_downloadable_macOS_installers(self.constants.payload_path, "DeveloperSeed")
-            if avalible_installers:
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            available_installers = installer.list_downloadable_macOS_installers(self.constants.payload_path, "DeveloperSeed")
+            if available_installers:
                 # Add mirror of 11.2.3 for users who want it
                 options.append([f"macOS {mirror_data.Install_macOS_Big_Sur_11_2_3['Version']} ({mirror_data.Install_macOS_Big_Sur_11_2_3['Build']} - {utilities.human_fmt(mirror_data.Install_macOS_Big_Sur_11_2_3['Size'])} - {mirror_data.Install_macOS_Big_Sur_11_2_3['Source']})", lambda: self.download_install_assistant(mirror_data.Install_macOS_Big_Sur_11_2_3['Link'])])
-                for app in avalible_installers:
-                    if avalible_installers[app]['Variant'] in ["DeveloperSeed", "PublicSeed"]:
+                for app in available_installers:
+                    if available_installers[app]['Variant'] in ["DeveloperSeed", "PublicSeed"]:
                         variant = " Beta"
                     else:
                         variant = ""
-                    options.append([f"macOS {avalible_installers[app]['Version']}{variant} ({avalible_installers[app]['Build']} - {utilities.human_fmt(avalible_installers[app]['Size'])} - {avalible_installers[app]['Source']})", lambda x=app: self.download_install_assistant(avalible_installers[x]['Link'])])
+                    options.append([f"macOS {available_installers[app]['Version']}{variant} ({available_installers[app]['Build']} - {utilities.human_fmt(available_installers[app]['Size'])} - {available_installers[app]['Source']})", lambda x=app: self.download_install_assistant(available_installers[x]['Link'])])
                 for option in options:
                     menu.add_menu_option(option[0], function=option[1])
             response = menu.start()
-    
+
     def find_local_installer(self):
         response = None
         while not (response and response == -1):
             options = []
             title = ["Select the macOS Installer you wish to use"]
-            menu = utilities.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
-            avalible_installers = installer.list_local_macOS_installers()
-            if avalible_installers:
-                for app in avalible_installers:
-                    options.append([f"{avalible_installers[app]['Short Name']}: {avalible_installers[app]['Version']} ({avalible_installers[app]['Build']})", lambda x=app: self.list_disks(avalible_installers[x]['Path'])])
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
+            available_installers = installer.list_local_macOS_installers()
+            if available_installers:
+                for app in available_installers:
+                    options.append([f"{available_installers[app]['Short Name']}: {available_installers[app]['Version']} ({available_installers[app]['Build']})", lambda x=app: self.list_disks(available_installers[x]['Path'])])
                 for option in options:
                     menu.add_menu_option(option[0], function=option[1])
             response = menu.start()
-    
+
     def list_disks(self, installer_path):
         disk = installer.select_disk_to_format()
         if disk != None:

@@ -7,7 +7,7 @@ import subprocess
 import shutil
 import os
 from pathlib import Path
-from resources import utilities, constants
+from resources import utilities, constants, tui_helpers
 from data import os_data
 
 class tui_disk_installation:
@@ -60,7 +60,7 @@ class tui_disk_installation:
         selected_disk = supported_disks[disk_identifier]
 
         supported_partitions = {}
-        
+
         for partition in selected_disk["partitions"]:
             if selected_disk["partitions"][partition]["fs"] not in ("msdos", "EFI"):
                 continue
@@ -79,7 +79,7 @@ class tui_disk_installation:
         utilities.header(["Installing OpenCore to Drive"])
 
         if not self.constants.opencore_release_folder.exists():
-            utilities.TUIOnlyPrint(
+            tui_helpers.TUIOnlyPrint(
                 ["Installing OpenCore to Drive"],
                 "Press [Enter] to go back.\n",
                 [
@@ -92,7 +92,7 @@ Please build OpenCore first!"""
         print("\nDisk picker is loading...")
 
         all_disks = self.list_disks()
-        menu = utilities.TUIMenu(
+        menu = tui_helpers.TUIMenu(
             ["Select Disk"],
             "Please select the disk you would like to install OpenCore to: ",
             in_between=["Missing disks? Ensure they have an EFI or FAT32 partition."],
@@ -110,7 +110,7 @@ Please build OpenCore first!"""
         disk_identifier = "disk" + response
         selected_disk = all_disks[disk_identifier]
 
-        menu = utilities.TUIMenu(
+        menu = tui_helpers.TUIMenu(
             ["Select Partition"],
             "Please select the partition you would like to install OpenCore to: ",
             return_number_instead_of_direct_call=True,
@@ -130,7 +130,7 @@ Please build OpenCore first!"""
         response = menu.start()
 
         if response == -1:
-            return        
+            return
         self.install_opencore(f"{disk_identifier}s{response}")
 
     def install_opencore(self, full_disk_identifier):
@@ -147,7 +147,7 @@ Please build OpenCore first!"""
             ):
                 return True
             return False
-        
+
         # TODO: Apple Script fails in Yosemite(?) and older
         args = [
             "osascript",
@@ -168,9 +168,18 @@ Please build OpenCore first!"""
                 # cancelled prompt
                 return
             else:
-                utilities.TUIOnlyPrint(
-                    ["Copying OpenCore"], "Press [Enter] to go back.\n", ["An error occurred!"] + result.stderr.decode().split("\n") + ["", "Please report this to the devs at GitHub."]
-                ).start()
+                if self.constants.gui_mode is False:
+                    tui_helpers.TUIOnlyPrint(
+                        ["Copying OpenCore"], "Press [Enter] to go back.\n", ["An error occurred!"] + result.stderr.decode().split("\n") + [""]
+                    ).start()
+                else:
+                    print("An error occurred!")
+                    print(result.stderr.decode())
+
+                    # Check if we're in Safe Mode, and if so, tell user FAT32 is unsupported
+                    if utilities.check_boot_mode() == "safe_boot":
+                        print("\nSafe Mode detected. FAT32 is unsupported by macOS in this mode.")
+                        print("Please disable Safe Mode and try again.")
                 return
         partition_info = plistlib.loads(subprocess.run(f"diskutil info -plist {full_disk_identifier}".split(), stdout=subprocess.PIPE).stdout.decode().strip().encode())
         parent_disk = partition_info["ParentWholeDisk"]
@@ -198,7 +207,7 @@ Please build OpenCore first!"""
                 choice = input("\nWould you like to still install OpenCore to this drive?(y/n): ")
                 if not choice in ["y", "Y", "Yes", "yes"]:
                     subprocess.run(["diskutil", "umount", mount_path], stdout=subprocess.PIPE).stdout.decode().strip().encode()
-                    return
+                    return False
             if (mount_path / Path("EFI/OC")).exists():
                 print("- Removing preexisting EFI/OC folder")
                 shutil.rmtree(mount_path / Path("EFI/OC"), onerror=rmtree_handler)
@@ -232,7 +241,7 @@ Please build OpenCore first!"""
             else:
                 print("- Adding Internal Drive icon")
                 shutil.copy(self.constants.icon_path_internal, mount_path)
-            
+
             print("- Cleaning install location")
             if not self.constants.recovery_status:
                 print("- Unmounting EFI partition")
@@ -242,7 +251,12 @@ Please build OpenCore first!"""
                 print("\nPress [Enter] to continue.\n")
                 input()
         else:
-            utilities.TUIOnlyPrint(["Copying OpenCore"], "Press [Enter] to go back.\n", ["EFI failed to mount!", "Please report this to the devs at GitHub."]).start()
+            if self.constants.gui_mode is False:
+                tui_helpers.TUIOnlyPrint(["Copying OpenCore"], "Press [Enter] to go back.\n", ["EFI failed to mount!"]).start()
+            else:
+                print("EFI failed to mount!")
+            return False
+        return True
 
 def rmtree_handler(func, path, exc_info):
     if exc_info[0] == FileNotFoundError:

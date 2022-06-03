@@ -25,7 +25,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.yonah.value,
         "Max OS Supported": os_data.os_data.snow_leopard,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 13,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -45,7 +45,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 13,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -65,7 +65,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm43224,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 13,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -335,7 +335,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.sandy_bridge.value,
         "Max OS Supported": os_data.os_data.high_sierra,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm4360,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2070,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM20702_v1,
         "Screen Size": 11,
         "Ethernet Chipset": "Broadcom",  # Set for Apple Thunderbolt Adapter
         "Stock GPUs": [
@@ -352,7 +352,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.sandy_bridge.value,
         "Max OS Supported": os_data.os_data.high_sierra,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm4360,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2070,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM20702_v1,
         "Screen Size": 13,
         "Ethernet Chipset": "Broadcom",  # Set for Apple Thunderbolt Adapter
         "Stock GPUs": [
@@ -591,7 +591,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.yonah.value,
         "Max OS Supported": os_data.os_data.snow_leopard,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 15,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -610,7 +610,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.yonah.value,
         "Max OS Supported": os_data.os_data.snow_leopard,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 17,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -629,7 +629,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 17,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -648,7 +648,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 15,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -667,7 +667,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.el_capitan,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 15,  # Shipped with 17 as well
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -686,7 +686,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.el_capitan,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Screen Size": 15,  # Shipped with 17 as well
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
@@ -1493,7 +1493,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.yonah.value,
         "Max OS Supported": os_data.os_data.snow_leopard,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Ethernet Chipset": "Marvell",
         "Stock GPUs": [
             device_probe.Intel.Archs.GMA_950
@@ -1510,7 +1510,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "Ethernet Chipset": "Marvell",
         "Stock GPUs": [
             device_probe.Intel.Archs.GMA_950
@@ -1546,6 +1546,7 @@ smbios_dictionary = {
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm4360,
         "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2070,
         "Ethernet Chipset": "Broadcom",
+        "nForce Chipset": True,
         "Stock GPUs": [
             device_probe.NVIDIA.Archs.Tesla
         ],
@@ -1560,7 +1561,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.sandy_bridge.value,
         "Max OS Supported": os_data.os_data.high_sierra,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm4360,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2070,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM20702_v1,
         "Ethernet Chipset": "Broadcom",
         "Stock GPUs": [
             device_probe.Intel.Archs.Sandy_Bridge
@@ -1576,7 +1577,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.sandy_bridge.value,
         "Max OS Supported": os_data.os_data.high_sierra,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm4360,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2070,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM20702_v1,
         "Ethernet Chipset": "Broadcom",
         "Stock GPUs": [
             device_probe.Intel.Archs.Sandy_Bridge,
@@ -1593,7 +1594,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.sandy_bridge.value,
         "Max OS Supported": os_data.os_data.high_sierra,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm4360,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2070,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM20702_v1,
         "Ethernet Chipset": "Broadcom",
         "Stock GPUs": [
             device_probe.Intel.Archs.Sandy_Bridge,
@@ -1688,7 +1689,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.yonah.value,
         "Max OS Supported": os_data.os_data.snow_leopard,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
         "Legacy iSight": True,
@@ -1707,7 +1708,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.yonah.value,
         "Max OS Supported": os_data.os_data.snow_leopard,
         "Wireless Model": device_probe.Atheros.Chipsets.AirPortAtheros40,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "UGA Graphics": True,
         "Ethernet Chipset": "Marvell",
         "Legacy iSight": True,
@@ -2545,7 +2546,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": None,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "UGA Graphics": True,
         "Ethernet Chipset": "Intel 80003ES2LAN",
         "Socketed GPUs": "PCIe",
@@ -2564,7 +2565,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.conroe.value,
         "Max OS Supported": os_data.os_data.lion,
         "Wireless Model": None,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "UGA Graphics": True,
         "Ethernet Chipset": "Intel 80003ES2LAN",
         "Socketed GPUs": "PCIe",
@@ -2583,7 +2584,7 @@ smbios_dictionary = {
         "CPU Generation": cpu_data.cpu_data.penryn.value,
         "Max OS Supported": os_data.os_data.el_capitan,
         "Wireless Model": device_probe.Broadcom.Chipsets.AirPortBrcm43224,
-        "Bluetooth Model": bluetooth_data.bluetooth_data.BRCM2045,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.APPLE_CSR,
         "UGA Graphics": True,
         "Ethernet Chipset": "Intel 80003ES2LAN",
         "Socketed GPUs": "PCIe",
@@ -2720,6 +2721,36 @@ smbios_dictionary = {
             "SATA 3.5",
         ],
     },
+    # Mac Studio M1 Max
+    "Mac13,1": {
+        "Board ID": None,
+        "FirmwareFeatures": None,
+        "SecureBootModel": "j375c",
+        "CPU Generation": cpu_data.cpu_data.apple_m1_max.value,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": device_probe.Broadcom.Chipsets.AppleBCMWLANBusInterfacePCIe,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.PCIe,
+        "Ethernet Chipset": "Aquantia",
+        "Stock GPUs": [],
+        "Stock Storage": [
+            "NVMe",
+        ],
+    },
+    # Mac Studio M1 Ultra
+    "Mac13,2": {
+        "Board ID": None,
+        "FirmwareFeatures": None,
+        "SecureBootModel": "j375d",
+        "CPU Generation": cpu_data.cpu_data.apple_m1_ultra.value,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": device_probe.Broadcom.Chipsets.AppleBCMWLANBusInterfacePCIe,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.PCIe,
+        "Ethernet Chipset": "Aquantia",
+        "Stock GPUs": [],
+        "Stock Storage": [
+            "NVMe",
+        ],
+    },
     "ADP2,1": {
         "Board ID": None,
         "FirmwareFeatures": None,
@@ -2807,6 +2838,7 @@ smbios_dictionary = {
         # VMware Virtual Machine
         "Board ID": "440BX Desktop Reference Platform",
         "FirmwareFeatures": None,
+        "SecureBootModel": "x86legacy",
         "CPU Generation": cpu_data.cpu_data.penryn.value,
         "Max OS Supported": os_data.os_data.max_os,
         "Wireless Model": None,
@@ -2818,6 +2850,7 @@ smbios_dictionary = {
         # Parallels Virtual Machine
         "Board ID": "Parallels Virtual Platform",
         "FirmwareFeatures": None,
+        "SecureBootModel": "x86legacy",
         "CPU Generation": cpu_data.cpu_data.penryn.value,
         "Max OS Supported": os_data.os_data.max_os,
         "Wireless Model": None,
@@ -2842,6 +2875,128 @@ smbios_dictionary = {
         "Board ID": None,
         "FirmwareFeatures": None,
         "SecureBootModel": "j214",
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_GPU_Test_Board": {
+        # AppleInternal GPU Test Board
+        # System is used for testing Intel iGPUs
+        # Model has been configured with the following:
+        # - Broadwell iGPU (HD Graphics 5300)
+        # - Skylake iGPU (HD Graphics 5xx)
+        # - Kaby Lake iGPU (HD Graphics 6xx)
+        # - Ice Lake iGPU (G4/G7)
+        "Board ID": "Mac-50619A408DB004DA",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_1": {
+        # Laptop model
+        # No mentions in SLE outside X86PlatformPlugin
+        "Board ID": "Mac-112B0A653D3AAB9C",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_2": {
+        # Laptop model
+        # Only mentioned in ApplePlatformEnabler and X86PlatformPlugin
+        "Board ID": "Mac-4BFBC784B845591E",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_3": {
+        # Laptop model, 15"/17" with dGPU and GMUX
+        # Only mentioned in AppleGraphicsPowerManagement, AppleMuxControl2, AGDCBacklightControl, ApplePlatformEnabler and X86PlatformPlugin
+        "Board ID": "Mac-564FBA6031E5946A",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+     "APPL_UNKNOWN_MODEL_4": {
+        # Laptop model, iGPU only
+        # Only mentioned in AppleGraphicsPowerManagement, ApplePlatformEnabler and X86PlatformPlugin
+        "Board ID": "Mac-6FEBD60817C77D8A",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_5": {
+        # Laptop model, iGPU only, Iris Plus Graphics G7
+        # Only mentioned in AppleGraphicsPowerManagement, ApplePlatformEnabler and X86PlatformPlugin
+        "Board ID": "Mac-747B1AEFF11738BE",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_6": {
+        # Laptop model, iGPU only
+        # Only mentioned in AppleGraphicsPowerManagement, ApplePlatformEnabler and X86PlatformPlugin
+        "Board ID": "Mac-87DCB00F4AD77EEA",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_7": {
+        # Laptop model
+        # Only mentioned in X86PlatformPlugin, AppleGVA
+        "Board ID": "Mac-90BE64C3CB5A9AEB",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
+        "CPU Generation": None,
+        "Max OS Supported": os_data.os_data.max_os,
+        "Wireless Model": None,
+        "Bluetooth Model": bluetooth_data.bluetooth_data.NonApplicable,
+        "Stock GPUs": [],
+        "Stock Storage": [],
+    },
+    "APPL_UNKNOWN_MODEL_7": {
+        # Laptop model, iGPU only
+        # Only mentioned in AppleGraphicsPowerManagement and X86PlatformPlugin
+        "Board ID": "Mac-9394BDF4BF862EE7",
+        "FirmwareFeatures": None,
+        "SecureBootModel": None,
         "CPU Generation": None,
         "Max OS Supported": os_data.os_data.max_os,
         "Wireless Model": None,

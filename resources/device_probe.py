@@ -1,13 +1,12 @@
 # Hardware probing
 # Copyright (C) 2020-2022, Dhinak G, Mykola Grymalyuk
 
-from __future__ import annotations
-
 import binascii
 import enum
 import itertools
 import subprocess
 import plistlib
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Optional, Type, Union
 
@@ -29,16 +28,12 @@ class PCIDevice:
     device_id: int  # The device ID of this PCI device
     class_code: int  # The class code of this PCI device - https://pci-ids.ucw.cz/read/PD
 
-    # ioregistryentry: Optional[ioreg.IORegistryEntry] = None
-    name: Optional[str] = None  # Name of IORegistryEntry
-    model: Optional[str] = None  # model property
-    acpi_path: Optional[str] = None
-    pci_path: Optional[str] = None
-
-    # def __getstate__(self):
-    #     state = self.__dict__.copy()
-    #     state.pop("ioregistryentry")
-    #     return state
+    name:             Optional[str]  = None  # Name of IORegistryEntry
+    model:            Optional[str]  = None  # model property
+    acpi_path:        Optional[str]  = None  # ACPI Device Path
+    pci_path:         Optional[str]  = None  # PCI Device Path
+    disable_metal:    Optional[bool] = False # 'disable-metal' property
+    force_compatible: Optional[bool] = False # 'force-compat' property
 
     @classmethod
     def from_ioregistry(cls, entry: ioreg.io_registry_entry_t, anti_spoof=False):
@@ -56,15 +51,12 @@ class PCIDevice:
             device.model = model
         if "acpi-path" in properties:
             device.acpi_path = properties["acpi-path"]
+        if "disable-metal" in properties:
+            device.disable_metal = True
+        if "force-compat" in properties:
+            device.force_compatible = True
         device.populate_pci_path(entry)
         return device
-
-    # @staticmethod
-    # def vendor_detect_old(device):
-    #     for i in [NVIDIA, AMD]:
-    #         if i.detect(device):
-    #             return i
-    #     return None
 
     def vendor_detect(self, *, inherits: ClassVar[Any] = None, classes: list = None):
         for i in classes or itertools.chain.from_iterable([subclass.__subclasses__() for subclass in PCIDevice.__subclasses__()]):
@@ -76,18 +68,19 @@ class PCIDevice:
     def detect(cls, device):
         return device.vendor_id == cls.VENDOR_ID and ((device.class_code == cls.CLASS_CODE) if getattr(cls, "CLASS_CODE", None) else True)  # type: ignore  # pylint: disable=no-member
 
-    # def acpi_path(self):
-    #     # Eventually
-    #     raise NotImplementedError
-
     def populate_pci_path(self, original_entry: ioreg.io_registry_entry_t):
         # Based off gfxutil logic, seems to work.
         paths = []
         entry = original_entry
         while entry:
             if ioreg.IOObjectConformsTo(entry, "IOPCIDevice".encode()):
-                location = [hex(int(i, 16)) for i in ioreg.io_name_t_to_str(ioreg.IORegistryEntryGetLocationInPlane(entry, "IOService".encode(), None)[1]).split(",") + ["0"]]
-                paths.append(f"Pci({location[0]},{location[1]})")
+                # Virtual PCI devices provide a botched IOService path (us.electronic.kext.vusb)
+                # We only care about physical devices, so skip them
+                try:
+                    location = [hex(int(i, 16)) for i in ioreg.io_name_t_to_str(ioreg.IORegistryEntryGetLocationInPlane(entry, "IOService".encode(), None)[1]).split(",") + ["0"]]
+                    paths.append(f"Pci({location[0]},{location[1]})")
+                except ValueError:
+                    break
             elif ioreg.IOObjectConformsTo(entry, "IOACPIPlatformDevice".encode()):
                 paths.append(f"PciRoot({hex(int(ioreg.corefoundation_to_native(ioreg.IORegistryEntryCreateCFProperty(entry, '_UID', ioreg.kCFAllocatorDefault, ioreg.kNilOptions)) or 0))})")  # type: ignore
                 break
@@ -152,6 +145,14 @@ class NVMeController(PCIDevice):
     aspm: Optional[int] = None
     # parent_aspm: Optional[int] = None
 
+@dataclass
+class EthernetController(PCIDevice):
+    CLASS_CODE: ClassVar[int] = 0x020000
+
+    chipset: enum.Enum = field(init=False)
+
+    def __post_init__(self):
+        self.detect_chipset()
 
 @dataclass
 class SATAController(PCIDevice):
@@ -174,6 +175,14 @@ class OHCIController(PCIDevice):
     CLASS_CODE: ClassVar[int] = 0x0c0310
 
 @dataclass
+class UHCIController(PCIDevice):
+    CLASS_CODE: ClassVar[int] = 0x0c0300
+
+@dataclass
+class SDXCController(PCIDevice):
+    CLASS_CODE: ClassVar[int] = 0x080501
+
+@dataclass
 class NVIDIA(GPU):
     VENDOR_ID: ClassVar[int] = 0x10DE
 
@@ -183,6 +192,8 @@ class NVIDIA(GPU):
         Fermi = "Fermi"
         Tesla = "Tesla"
         Kepler = "Kepler"
+        Maxwell = "Maxwell"
+        Pascal = "Pascal"
         Unknown = "Unknown"
 
     arch: Archs = field(init=False)
@@ -197,9 +208,25 @@ class NVIDIA(GPU):
             self.arch = NVIDIA.Archs.Fermi
         elif self.device_id in pci_data.nvidia_ids.kepler_ids:
             self.arch = NVIDIA.Archs.Kepler
+        elif self.device_id in pci_data.nvidia_ids.maxwell_ids:
+            self.arch = NVIDIA.Archs.Maxwell
+        elif self.device_id in pci_data.nvidia_ids.pascal_ids:
+            self.arch = NVIDIA.Archs.Pascal
         else:
             self.arch = NVIDIA.Archs.Unknown
 
+@dataclass
+class NVIDIAEthernet(EthernetController):
+    VENDOR_ID: ClassVar[int] = 0x10DE
+
+    class Chipsets(enum.Enum):
+        nForceEthernet = "nForceEthernet"
+
+    chipset: Chipsets = field(init=False)
+
+    def detect_chipset(self):
+        # nForce driver matches against Vendor ID, thus making all nForce chipsets supported
+        self.chipset = NVIDIAEthernet.Chipsets.nForceEthernet
 
 @dataclass
 class AMD(GPU):
@@ -293,6 +320,27 @@ class Intel(GPU):
         else:
             self.arch = Intel.Archs.Unknown
 
+@dataclass
+class IntelEthernet(EthernetController):
+    VENDOR_ID: ClassVar[int] = 0x8086
+
+    class Chipsets(enum.Enum):
+        AppleIntel8254XEthernet = "AppleIntel8254XEthernet Supported"
+        AppleIntelI210Ethernet = "AppleIntelI210Ethernet Supported"
+        Intel82574L = "Intel82574L Supported"
+        Unknown = "Unknown"
+
+    chipset: Chipsets = field(init=False)
+
+    def detect_chipset(self):
+        if self.device_id in pci_data.intel_ids.AppleIntel8254XEthernet:
+            self.chipset = IntelEthernet.Chipsets.AppleIntel8254XEthernet
+        elif self.device_id in pci_data.intel_ids.AppleIntelI210Ethernet:
+            self.chipset = IntelEthernet.Chipsets.AppleIntelI210Ethernet
+        elif self.device_id in pci_data.intel_ids.Intel82574L:
+            self.chipset = IntelEthernet.Chipsets.Intel82574L
+        else:
+            self.chipset = IntelEthernet.Chipsets.Unknown
 
 @dataclass
 class Broadcom(WirelessCard):
@@ -323,6 +371,21 @@ class Broadcom(WirelessCard):
         else:
             self.chipset = Broadcom.Chipsets.Unknown
 
+@dataclass
+class BroadcomEthernet(EthernetController):
+    VENDOR_ID: ClassVar[int] = 0x14E4
+
+    class Chipsets(enum.Enum):
+        AppleBCM5701Ethernet = "AppleBCM5701Ethernet supported"
+        Unknown = "Unknown"
+
+    chipset: Chipsets = field(init=False)
+
+    def detect_chipset(self):
+        if self.device_id in pci_data.broadcom_ids.AppleBCM5701Ethernet:
+            self.chipset = BroadcomEthernet.Chipsets.AppleBCM5701Ethernet
+        else:
+            self.chipset = BroadcomEthernet.Chipsets.Unknown
 
 @dataclass
 class Atheros(WirelessCard):
@@ -344,22 +407,82 @@ class Atheros(WirelessCard):
 
 
 @dataclass
+class Aquantia(EthernetController):
+    VENDOR_ID: ClassVar[int] = 0x1D6A
+
+    class Chipsets(enum.Enum):
+        # pylint: disable=invalid-name
+        AppleEthernetAquantiaAqtion = "AppleEthernetAquantiaAqtion supported"
+        Unknown = "Unknown"
+
+    chipset: Chipsets = field(init=False)
+
+    def detect_chipset(self):
+        if self.device_id in pci_data.aquantia_ids.AppleEthernetAquantiaAqtion:
+            self.chipset = Aquantia.Chipsets.AppleEthernetAquantiaAqtion
+        else:
+            self.chipset = Aquantia.Chipsets.Unknown
+
+@dataclass
+class Marvell(EthernetController):
+    VENDOR_ID: ClassVar[int] = 0x11AB
+
+    class Chipsets(enum.Enum):
+        MarvelYukonEthernet = "MarvelYukonEthernet supported"
+        Unknown = "Unknown"
+
+    chipset: Chipsets = field(init=False)
+
+    def detect_chipset(self):
+        if self.device_id in pci_data.marvell_ids.MarvelYukonEthernet:
+            self.chipset = Marvell.Chipsets.MarvelYukonEthernet
+        else:
+            self.chipset = Marvell.Chipsets.Unknown
+
+@dataclass
+class SysKonnect(EthernetController):
+    VENDOR_ID: ClassVar[int] = 0x1148
+
+    class Chipsets(enum.Enum):
+        MarvelYukonEthernet = "MarvelYukonEthernet supported"
+        Unknown = "Unknown"
+
+    chipset: Chipsets = field(init=False)
+
+    def detect_chipset(self):
+        if self.device_id in pci_data.syskonnect_ids.MarvelYukonEthernet:
+            self.chipset = SysKonnect.Chipsets.MarvelYukonEthernet
+        else:
+            self.chipset = SysKonnect.Chipsets.Unknown
+
+
+@dataclass
 class Computer:
     real_model: Optional[str] = None
     real_board_id: Optional[str] = None
     reported_model: Optional[str] = None
     reported_board_id: Optional[str] = None
+    build_model: Optional[str] = None
     gpus: list[GPU] = field(default_factory=list)
     igpu: Optional[GPU] = None  # Shortcut for IGPU
     dgpu: Optional[GPU] = None  # Shortcut for GFX0
     storage: list[PCIDevice] = field(default_factory=list)
     usb_controllers: list[PCIDevice] = field(default_factory=list)
+    sdxc_controller: list[PCIDevice] = field(default_factory=list)
+    ethernet: Optional[EthernetController] = field(default_factory=list)
     wifi: Optional[WirelessCard] = None
     cpu: Optional[CPU] = None
     oclp_version: Optional[str] = None
     opencore_version: Optional[str] = None
+    opencore_path: Optional[str] = None
     bluetooth_chipset: Optional[str] = None
+    ambient_light_sensor: Optional[bool] = False
     third_party_sata_ssd: Optional[bool] = False
+    secure_boot_model: Optional[str] = None
+    secure_boot_policy: Optional[int] = None
+    oclp_sys_version: Optional[str] = None
+    oclp_sys_date: Optional[str] = None
+    firmware_vendor: Optional[str] = None
 
     @staticmethod
     def probe():
@@ -370,10 +493,14 @@ class Computer:
         computer.wifi_probe()
         computer.storage_probe()
         computer.usb_controller_probe()
+        computer.sdxc_controller_probe()
+        computer.ethernet_probe()
         computer.smbios_probe()
         computer.cpu_probe()
         computer.bluetooth_probe()
+        computer.ambient_light_sensor_probe()
         computer.sata_disk_probe()
+        computer.oclp_sys_patch_probe()
         return computer
 
     def gpu_probe(self):
@@ -413,7 +540,6 @@ class Computer:
         ioreg.IOObjectRelease(device)
 
     def wifi_probe(self):
-        # result = subprocess.run("ioreg -r -c IOPCIDevice -a -d2".split(), stdout=subprocess.PIPE).stdout.strip()
         devices = ioreg.ioiterator_to_list(
             ioreg.IOServiceGetMatchingServices(
                 ioreg.kIOMasterPortDefault,
@@ -428,7 +554,26 @@ class Computer:
                 self.wifi = vendor.from_ioregistry(device, anti_spoof=True)  # type: ignore
                 break
             ioreg.IOObjectRelease(device)
-    
+
+    def ambient_light_sensor_probe(self):
+        device = next(ioreg.ioiterator_to_list(ioreg.IOServiceGetMatchingServices(ioreg.kIOMasterPortDefault, ioreg.IOServiceNameMatching("ALS0".encode()), None)[1]), None)
+        if device:
+            self.ambient_light_sensor = True
+            ioreg.IOObjectRelease(device)
+
+    def sdxc_controller_probe(self):
+        sdxc_controllers = ioreg.ioiterator_to_list(
+            ioreg.IOServiceGetMatchingServices(
+                ioreg.kIOMasterPortDefault,
+                {"IOProviderClass": "IOPCIDevice", "IOPropertyMatch": [{"class-code": binascii.a2b_hex(utilities.hexswap(hex(SDXCController.CLASS_CODE)[2:].zfill(8)))}]},
+                None,
+            )[1]
+        )
+
+        for device in sdxc_controllers:
+            self.sdxc_controller.append(SDXCController.from_ioregistry(device))
+            ioreg.IOObjectRelease(device)
+
     def usb_controller_probe(self):
         xhci_controllers = ioreg.ioiterator_to_list(
             ioreg.IOServiceGetMatchingServices(
@@ -451,6 +596,14 @@ class Computer:
                 None,
             )[1]
         )
+
+        uhci_controllers  = ioreg.ioiterator_to_list(
+            ioreg.IOServiceGetMatchingServices(
+                ioreg.kIOMasterPortDefault,
+                {"IOProviderClass": "IOPCIDevice", "IOPropertyMatch": [{"class-code": binascii.a2b_hex(utilities.hexswap(hex(UHCIController.CLASS_CODE)[2:].zfill(8)))}]},
+                None,
+            )[1]
+        )
         for device in xhci_controllers:
             self.usb_controllers.append(XHCIController.from_ioregistry(device))
             ioreg.IOObjectRelease(device)
@@ -460,7 +613,24 @@ class Computer:
         for device in ohci_controllers:
             self.usb_controllers.append(OHCIController.from_ioregistry(device))
             ioreg.IOObjectRelease(device)
-        
+        for device in uhci_controllers:
+            self.usb_controllers.append(UHCIController.from_ioregistry(device))
+            ioreg.IOObjectRelease(device)
+
+    def ethernet_probe(self):
+        ethernet_controllers = ioreg.ioiterator_to_list(
+            ioreg.IOServiceGetMatchingServices(
+                ioreg.kIOMasterPortDefault,
+                {"IOProviderClass": "IOPCIDevice", "IOPropertyMatch": [{"class-code": binascii.a2b_hex(utilities.hexswap(hex(EthernetController.CLASS_CODE)[2:].zfill(8)))}]},
+                None,
+            )[1]
+        )
+
+        for device in ethernet_controllers:
+            vendor: Type[EthernetController] = PCIDevice.from_ioregistry(device).vendor_detect(inherits=EthernetController)  # type: ignore
+            if vendor:
+                self.ethernet.append(vendor.from_ioregistry(device))  # type: ignore
+            ioreg.IOObjectRelease(device)
 
     def storage_probe(self):
         sata_controllers = ioreg.ioiterator_to_list(
@@ -486,7 +656,7 @@ class Computer:
         for device in sata_controllers:
             self.storage.append(SATAController.from_ioregistry(device))
             ioreg.IOObjectRelease(device)
-        
+
         for device in sas_controllers:
             self.storage.append(SASController.from_ioregistry(device))
             ioreg.IOObjectRelease(device)
@@ -521,13 +691,24 @@ class Computer:
         ioreg.IOObjectRelease(entry)
 
         # Real model
-        # TODO: We previously had logic for OC users using iMacPro1,1 with incorrect ExposeSensitiveData. Add logic?
         self.real_model = utilities.get_nvram("oem-product", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True) or self.reported_model
         self.real_board_id = utilities.get_nvram("oem-board", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True) or self.reported_board_id
+        self.build_model = utilities.get_nvram("OCLP-Model", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
 
         # OCLP version
         self.oclp_version = utilities.get_nvram("OCLP-Version", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
         self.opencore_version = utilities.get_nvram("opencore-version", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
+        self.opencore_path = utilities.get_nvram("boot-path", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
+
+        # SecureBoot Variables
+        self.secure_boot_model = utilities.check_secure_boot_model()
+        self.secure_boot_policy = utilities.check_ap_security_policy()
+
+        # Firmware Vendor
+        firmware_vendor = utilities.get_firmware_vendor(decode=False)
+        if isinstance(firmware_vendor, bytes):
+            firmware_vendor = str(firmware_vendor.replace(b"\x00", b"").decode("utf-8"))
+        self.firmware_vendor = firmware_vendor
 
     def cpu_probe(self):
         self.cpu = CPU(
@@ -547,7 +728,7 @@ class Computer:
             self.bluetooth_chipset = "BRCM2046 Hub"
         elif "Bluetooth" in usb_data:
             self.bluetooth_chipset = "Generic"
-    
+
     def sata_disk_probe(self):
         # Get all SATA Controllers/Disks from 'system_profiler SPSerialATADataType'
         # Determine whether SATA SSD is present and Apple-made
@@ -565,8 +746,18 @@ class Computer:
                                 # Bail out of loop as we only need to know if there are any third-party SSDs present
                                 break
                 except KeyError:
-                    # Notes: 
+                    # Notes:
                     # - SATA Optical Disk Drives don't report 'spsata_medium_type'
                     # - 'spsata_physical_interconnect' was not introduced till 10.9
                     continue
-        
+
+    def oclp_sys_patch_probe(self):
+        path = Path("/System/Library/CoreServices/OpenCore-Legacy-Patcher.plist")
+        if path.exists():
+            sys_plist = plistlib.load(path.open("rb"))
+            if sys_plist:
+                try:
+                    self.oclp_sys_version = sys_plist["OpenCore Legacy Patcher"]
+                    self.oclp_sys_date = sys_plist["Time Patched"]
+                except KeyError:
+                    pass

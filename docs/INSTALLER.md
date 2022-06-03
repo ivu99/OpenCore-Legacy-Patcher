@@ -1,8 +1,5 @@
 # Download and build macOS Installers
 
-* [Downloading](#downloading)
-* [Building](#building)
-
 This doc is centered around downloading and writing the macOS installer to a USB. If you're already familiar with how to do this, you can skip.
 
 * Note: 16GB+ USB will be required for the installer
@@ -25,12 +22,11 @@ First we'll want to select the "Create macOS Installer" button. This will presen
 
 For this example, we'll assume you'll need an installer. Selecting this option will download Apple's Installer Catalogs and build a list for you to choose:
 
-
 | Downloading | Listed Installers |
 | :--- | :--- |
 | ![OCLP GUI Installer Download Catalog](../images/OCLP-GUI-Installer-Download-Catalog.png) | ![OCLP GUI Installer Download Listed Products](../images/OCLP-GUI-Installer-Download-Listed-Products.png) |
 
-Since the patcher officially supports Big Sur and newer for patching, only those entires will be showen. For ourselves, we'll select 12.1 as that's the latest public release at the time of writing. This will download and install the macOS installer to your applications folder.
+Since the patcher officially supports Big Sur and newer for patching, only those entires will be shown. For ourselves, we'll select 12.1 as that's the latest public release at the time of writing. This will download and install the macOS installer to your applications folder.
 
 | Downloading the Installer | Requesting to install | Finished Installing |
 | :--- | :--- | :--- |
@@ -49,4 +45,5 @@ Now the patcher will start the installer flashing!
 | Flashing | Success Prompt | Finished Flashing |
 | :--- | :--- |
 | ![](../images/OCLP-GUI-Installer-Flashing-Process.png) | ![](../images/OCLP-GUI-Installer-Sucess-Prompt.png) | ![](../images/OCLP-GUI-Installer-Finished-Script.png) |
+
 # Once finished, head to [Building and installing OpenCore](./BUILD.md)

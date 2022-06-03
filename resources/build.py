@@ -1,6 +1,5 @@
 # Commands for building the EFI and SMBIOS
 # Copyright (C) 2020-2022, Dhinak G, Mykola Grymalyuk
-from __future__ import print_function
 
 import binascii
 import copy
@@ -53,7 +52,7 @@ class BuildOpenCore:
         else:
             print("- Adding Internal Drive icon")
             shutil.copy(self.constants.icon_path_internal, self.constants.opencore_release_folder)
-    
+
     def chainload_diags(self):
         Path(self.constants.opencore_release_folder / Path("System/Library/CoreServices/.diagnostics/Drivers/HardwareDrivers")).mkdir(parents=True, exist_ok=True)
         if self.constants.boot_efi is True:
@@ -104,6 +103,7 @@ class BuildOpenCore:
         self.config["#Revision"]["OpenCore-Version"] = f"{self.constants.opencore_version} - {self.constants.opencore_build} - {self.constants.opencore_commit}"
         self.config["#Revision"]["Original-Model"] = self.model
         self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Version"] = f"{self.constants.patcher_version}"
+        self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Model"] = self.model
 
         for name, version, path, check in [
             # Essential kexts
@@ -126,9 +126,6 @@ class BuildOpenCore:
                 self.constants.cpufriend_path,
                 lambda: self.model not in ["iMac7,1", "Xserve2,1", "Dortania1,1"] and self.constants.allow_oc_everywhere is False and self.constants.disallow_cpufriend is False and self.constants.serial_settings != "None",
             ),
-            # Ethernet patches
-            ("nForceEthernet.kext", self.constants.nforce_version, self.constants.nforce_path, lambda: smbios_data.smbios_dictionary[self.model]["Ethernet Chipset"] == "Nvidia"),
-            ("MarvelYukonEthernet.kext", self.constants.marvel_version, self.constants.marvel_path, lambda: smbios_data.smbios_dictionary[self.model]["Ethernet Chipset"] == "Marvell"),
             # Legacy audio
             (
                 "AppleALC.kext",
@@ -149,7 +146,7 @@ class BuildOpenCore:
                 # Credit to Parrotgeek1 for boot.efi and hv_vmm_present patch sets
                 # print("- Enabling Board ID exemption patch")
                 # self.get_item_by_kv(self.config["Booter"]["Patch"], "Comment", "Skip Board ID check")["Enabled"] = True
-                
+
                 print("- Enabling VMM exemption patch")
                 self.get_item_by_kv(self.config["Kernel"]["Patch"], "Comment", "Reroute kern.hv_vmm_present patch (1)")["Enabled"] = True
                 self.get_item_by_kv(self.config["Kernel"]["Patch"], "Comment", "Reroute kern.hv_vmm_present patch (2)")["Enabled"] = True
@@ -168,25 +165,60 @@ class BuildOpenCore:
         if self.get_kext_by_bundle_path("Lilu.kext")["Enabled"] is True:
             # Required for Lilu in 11.0+
             self.config["Kernel"]["Quirks"]["DisableLinkeditJettison"] = True
-        
-        if smbios_data.smbios_dictionary[self.model]["CPU Generation"] <= cpu_data.cpu_data.kaby_lake.value:
-            if self.constants.fu_status is True:
-                # Enable FeatureUnlock.kext
-                self.enable_kext("FeatureUnlock.kext", self.constants.featureunlock_version, self.constants.featureunlock_path)
-                if self.constants.fu_arguments is not None:
-                    print(f"- Adding additional FeatureUnlock args: {self.constants.fu_arguments}")
-                    self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += self.constants.fu_arguments
-        
+
+        if self.constants.fu_status is True:
+            # Enable FeatureUnlock.kext
+            self.enable_kext("FeatureUnlock.kext", self.constants.featureunlock_version, self.constants.featureunlock_path)
+            if self.constants.fu_arguments is not None:
+                print(f"- Adding additional FeatureUnlock args: {self.constants.fu_arguments}")
+                self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += self.constants.fu_arguments
+
+        if smbios_data.smbios_dictionary[self.model]["CPU Generation"] <= cpu_data.cpu_data.sandy_bridge.value or self.constants.disable_xcpm is True:
+            # With macOS 12.3 Beta 1, Apple dropped the 'plugin-type' check within X86PlatformPlugin
+            # Because of this, X86PP will match onto the CPU instead of ACPI_SMC_PlatformPlugin
+            # This causes power management to break on pre-Ivy Bridge CPUs as they don't have correct
+            # power management tables provided.
+            # This patch will simply increase ASPP's 'IOProbeScore' to outmatch X86PP
+            print("- Overriding ACPI SMC matching")
+            self.enable_kext("ASPP-Override.kext", self.constants.aspp_override_version, self.constants.aspp_override_path)
+            if self.constants.disable_xcpm is True:
+                # Only inject on older OSes if user requests
+                self.get_item_by_kv(self.config["Kernel"]["Add"], "BundlePath", "ASPP-Override.kext")["MinKernel"] = ""
+
         if self.model in ["MacBookPro6,1", "MacBookPro6,2", "MacBookPro9,1", "MacBookPro10,1"]:
             # Modded RestrictEvents with displaypolicyd blocked to fix dGPU switching
             self.enable_kext("RestrictEvents.kext", self.constants.restrictevents_mbp_version, self.constants.restrictevents_mbp_path)
 
-        # Ethernet Patch Sets
-        if smbios_data.smbios_dictionary[self.model]["Ethernet Chipset"] == "Broadcom":
-            if smbios_data.smbios_dictionary[self.model]["CPU Generation"] < cpu_data.cpu_data.ivy_bridge.value:
-                # Required due to Big Sur's BCM5701 requiring VT-x support
-                # Applicable for pre-Ivy Bridge models
-                self.enable_kext("CatalinaBCM5701Ethernet.kext", self.constants.bcm570_version, self.constants.bcm570_path)
+        if not self.constants.custom_model and self.constants.computer.ethernet:
+            for controller in self.constants.computer.ethernet:
+                if isinstance(controller, device_probe.BroadcomEthernet) and controller.chipset == device_probe.BroadcomEthernet.Chipsets.AppleBCM5701Ethernet:
+                    if smbios_data.smbios_dictionary[self.model]["CPU Generation"] < cpu_data.cpu_data.ivy_bridge.value:
+                        # Required due to Big Sur's BCM5701 requiring VT-D support
+                        # Applicable for pre-Ivy Bridge models
+                        if self.get_kext_by_bundle_path("CatalinaBCM5701Ethernet.kext")["Enabled"] is False:
+                            self.enable_kext("CatalinaBCM5701Ethernet.kext", self.constants.bcm570_version, self.constants.bcm570_path)
+                elif isinstance(controller, device_probe.IntelEthernet) and controller.chipset == device_probe.IntelEthernet.Chipsets.AppleIntelI210Ethernet:
+                    if smbios_data.smbios_dictionary[self.model]["CPU Generation"] < cpu_data.cpu_data.ivy_bridge.value:
+                        # Apple's IOSkywalkFamily in DriverKit requires VT-D support
+                        # Applicable for pre-Ivy Bridge models
+                        if self.get_kext_by_bundle_path("CatalinaIntelI210Ethernet.kext")["Enabled"] is False:
+                            self.enable_kext("CatalinaIntelI210Ethernet.kext", self.constants.i210_version, self.constants.i210_path)
+                elif isinstance(controller, device_probe.NVIDIAEthernet):
+                    if self.get_kext_by_bundle_path("nForceEthernet.kext")["Enabled"] is False:
+                        self.enable_kext("nForceEthernet.kext", self.constants.nforce_version, self.constants.nforce_path)
+                elif isinstance(controller, device_probe.Marvell) or  isinstance(controller, device_probe.SysKonnect):
+                    if self.get_kext_by_bundle_path("MarvelYukonEthernet.kext")["Enabled"] is False:
+                        self.enable_kext("MarvelYukonEthernet.kext", self.constants.marvel_version, self.constants.marvel_path)
+        else:
+            if smbios_data.smbios_dictionary[self.model]["Ethernet Chipset"] == "Broadcom":
+                if smbios_data.smbios_dictionary[self.model]["CPU Generation"] < cpu_data.cpu_data.ivy_bridge.value:
+                    # Required due to Big Sur's BCM5701 requiring VT-D support
+                    # Applicable for pre-Ivy Bridge models
+                    self.enable_kext("CatalinaBCM5701Ethernet.kext", self.constants.bcm570_version, self.constants.bcm570_path)
+            elif smbios_data.smbios_dictionary[self.model]["Ethernet Chipset"] == "Nvidia":
+                self.enable_kext("nForceEthernet.kext", self.constants.nforce_version, self.constants.nforce_path)
+            elif smbios_data.smbios_dictionary[self.model]["Ethernet Chipset"] == "Marvell":
+                self.enable_kext("MarvelYukonEthernet.kext", self.constants.marvel_version, self.constants.marvel_path)
 
         # i3 Ivy Bridge iMacs don't support RDRAND
         # However for prebuilt, assume they do
@@ -204,6 +236,17 @@ class BuildOpenCore:
                 self.get_item_by_kv(self.config["Kernel"]["Patch"], "Comment", "SurPlus v1 - PART 1 of 2 - Patch read_erandom (inlined in _early_random)")["MaxKernel"] = ""
                 self.get_item_by_kv(self.config["Kernel"]["Patch"], "Comment", "SurPlus v1 - PART 2 of 2 - Patch register_and_init_prng")["MaxKernel"] = ""
 
+        # In macOS 12.4 and 12.5 Beta 1, Apple added AVX1.0 usage in AppleFSCompressionTypeZlib
+        # Pre-Sandy Bridge CPUs don't support AVX1.0, thus we'll downgrade the kext to 12.3.1's
+        # Currently a (hopefully) temporary workaround for the issue, proper fix needs to be investigated
+        # Ref:
+        #    https://forums.macrumors.com/threads/macos-12-monterey-on-unsupported-macs-thread.2299557/post-31120235
+        #    https://forums.macrumors.com/threads/monterand-probably-the-start-of-an-ongoing-saga.2320479/post-31123553
+
+        # To verify the non-AVX kext is used, check IOService for 'com_apple_AppleFSCompression_NoAVXCompressionTypeZlib'
+        if smbios_data.smbios_dictionary[self.model]["CPU Generation"] < cpu_data.cpu_data.sandy_bridge.value:
+            self.enable_kext("NoAVXFSCompressionTypeZlib.kext", self.constants.apfs_zlib_version, self.constants.apfs_zlib_path)
+
         if not self.constants.custom_model and (self.constants.allow_oc_everywhere is True or self.model in model_array.MacPro):
             # Use Innie's same logic:
             # https://github.com/cdf/Innie/blob/v1.3.0/Innie/Innie.cpp#L90-L97
@@ -218,7 +261,7 @@ class BuildOpenCore:
             if not self.computer.storage:
                 print("- No PCIe Storage Controllers found to fix")
 
-        if not self.constants.custom_model:
+        if not self.constants.custom_model and self.constants.allow_nvme_fixing is True:
             nvme_devices = [i for i in self.computer.storage if isinstance(i, device_probe.NVMeController)]
             for i, controller in enumerate(nvme_devices):
                 print(f"- Found 3rd Party NVMe SSD ({i + 1}): {utilities.friendly_hex(controller.vendor_id)}:{utilities.friendly_hex(controller.device_id)}")
@@ -236,11 +279,8 @@ class BuildOpenCore:
                         print("- Falling back to -nvmefaspm")
                         self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " -nvmefaspm"
 
-                if (controller.vendor_id != 0x144D and controller.device_id != 0xA804 and self.model not in ["MacBookPro13,3", "MacBookPro14,3"]):
+                if (controller.vendor_id != 0x144D and controller.device_id != 0xA804):
                     # Avoid injecting NVMeFix when a native Apple NVMe drive is present
-                    # Note on 2016-2017 MacBook Pros, 15" devices used a stock Samsung SSD with IONVMeController
-                    # Technically this should be patched based on NVMeFix.kext logic, 
-                    # however Apple deemed the SSD unsupported for enhanced performance
                     # https://github.com/acidanthera/NVMeFix/blob/1.0.9/NVMeFix/NVMeFix.cpp#L220-L225
                     if self.get_kext_by_bundle_path("NVMeFix.kext")["Enabled"] is False:
                         self.enable_kext("NVMeFix.kext", self.constants.nvmefix_version, self.constants.nvmefix_path)
@@ -357,7 +397,7 @@ class BuildOpenCore:
         if smbios_data.smbios_dictionary[self.model]["CPU Generation"] <= cpu_data.cpu_data.penryn.value:
             print("- Adding IOHIDFamily patch")
             self.get_item_by_kv(self.config["Kernel"]["Patch"], "Identifier", "com.apple.iokit.IOHIDFamily")["Enabled"] = True
-        
+
         # Legacy iSight patches
         try:
             if smbios_data.smbios_dictionary[self.model]["Legacy iSight"] is True:
@@ -379,6 +419,12 @@ class BuildOpenCore:
             self.get_item_by_kv(self.config["ACPI"]["Add"], "Path", "SSDT-PCI.aml")["Enabled"] = True
             self.get_item_by_kv(self.config["ACPI"]["Patch"], "Comment", "BUF0 to BUF1")["Enabled"] = True
             shutil.copy(self.constants.windows_ssdt_path, self.constants.acpi_path)
+
+        # With macOS Monterey, Apple's SDXC driver requires the system to support VT-D
+        # However pre-Ivy Bridge don't support this feature
+        if smbios_data.smbios_dictionary[self.model]["CPU Generation"] <= cpu_data.cpu_data.sandy_bridge.value:
+            if (self.constants.computer.sdxc_controller and not self.constants.custom_model) or (self.model.startswith("MacBookPro8") or self.model.startswith("Macmini5")):
+                self.enable_kext("BigSurSDXC.kext", self.constants.bigsursdxc_version, self.constants.bigsursdxc_path)
 
         # USB Map
         usb_map_path = Path(self.constants.plist_folder_path) / Path("AppleUSBMaps/Info.plist")
@@ -420,7 +466,7 @@ class BuildOpenCore:
                     Path(self.constants.agdp_contents_folder).mkdir()
                     shutil.copy(agdp_map_path, self.constants.agdp_contents_folder)
                     self.get_kext_by_bundle_path("AGDP-Override.kext")["Enabled"] = True
-        
+
         if self.constants.serial_settings != "None":
             # AGPM Patch
             if self.model in model_array.DualGPUPatch:
@@ -487,7 +533,7 @@ class BuildOpenCore:
             self.enable_kext("IOFireWireSBP2.kext", self.constants.fw_kext, self.constants.fw_sbp2_path)
             self.enable_kext("IOFireWireSerialBusProtocolTransport.kext", self.constants.fw_kext, self.constants.fw_bus_path)
             self.get_kext_by_bundle_path("IOFireWireFamily.kext/Contents/PlugIns/AppleFWOHCI.kext")["Enabled"] = True
-    
+
 
         def backlight_path_detection(self):
             if not self.constants.custom_model and self.computer.dgpu and self.computer.dgpu.pci_path:
@@ -576,6 +622,7 @@ class BuildOpenCore:
                         "CAIL,CAIL_DisableUVDPowerGating": 1,
                         "CAIL,CAIL_DisableVCEPowerGating": 1,
                         "agdpmod": "pikera",
+                        "enable-gva-support": 1
                     })
             if self.constants.imac_model == "Legacy GCN":
                 print("- Adding Legacy GCN Power Gate Patches")
@@ -586,6 +633,7 @@ class BuildOpenCore:
                     "CAIL,CAIL_DisableUVDPowerGating": 1,
                     "CAIL,CAIL_DisableVCEPowerGating": 1,
                     "agdpmod": "pikera",
+                    "enable-gva-support": 1
                 })
                 if self.model == "iMac11,2":
                     self.config["DeviceProperties"]["Add"]["PciRoot(0x0)/Pci(0x3,0x0)/Pci(0x0,0x0)"].update({
@@ -595,6 +643,7 @@ class BuildOpenCore:
                         "CAIL,CAIL_DisableUVDPowerGating": 1,
                         "CAIL,CAIL_DisableVCEPowerGating": 1,
                         "agdpmod": "pikera",
+                        "enable-gva-support": 1
                     })
 
         # Check GPU Vendor
@@ -632,7 +681,7 @@ class BuildOpenCore:
                         print(f"- Found dGPU ({i + 1}) at {device.pci_path}")
                         if isinstance(device, device_probe.AMD):
                             print("- Adding Mac Pro, Xserve DRM patches")
-                            self.config["DeviceProperties"]["Add"][device.pci_path] = {"shikigva": 128, "unfairgva": 1, "rebuild-device-tree": 1, "agdpmod": "pikera"}
+                            self.config["DeviceProperties"]["Add"][device.pci_path] = {"shikigva": 128, "unfairgva": 1, "rebuild-device-tree": 1, "agdpmod": "pikera", "enable-gva-support": 1}
                         elif isinstance(device, device_probe.NVIDIA):
                             print("- Enabling Nvidia Output Patch")
                             self.config["DeviceProperties"]["Add"][device.pci_path] = {"rebuild-device-tree": 1, "agdpmod": "vit9696"}
@@ -645,7 +694,7 @@ class BuildOpenCore:
                             print("- Adding Mac Pro, Xserve DRM patches")
                             if "shikigva=128 unfairgva=1" not in self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"]:
                                 print("- Falling back to boot-args")
-                                self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " shikigva=128 unfairgva=1 agdpmod=pikera" + (
+                                self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " shikigva=128 unfairgva=1 agdpmod=pikera radgva=1" + (
                                     " -wegtree" if "-wegtree" not in self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] else ""
                                 )
                         elif isinstance(device, device_probe.NVIDIA):
@@ -662,6 +711,35 @@ class BuildOpenCore:
             else:
                 print("- Adding Mac Pro, Xserve DRM patches")
                 self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " shikigva=128 unfairgva=1 -wegtree"
+
+
+        if not self.constants.custom_model:
+            for i, device in enumerate(self.computer.gpus):
+                if isinstance(device, device_probe.NVIDIA):
+                    if (
+                        device.arch in [device_probe.NVIDIA.Archs.Fermi, device_probe.NVIDIA.Archs.Maxwell, device_probe.NVIDIA.Archs.Pascal] or
+                        (self.constants.force_nv_web is True and device.arch in [device_probe.NVIDIA.Archs.Tesla, device_probe.NVIDIA.Archs.Kepler])
+                    ):
+                        print(f"- Enabling Web Driver Patches for GPU ({i + 1}): {utilities.friendly_hex(device.vendor_id)}:{utilities.friendly_hex(device.device_id)}")
+                        if device.pci_path and device.acpi_path:
+                            if device.pci_path in self.config["DeviceProperties"]["Add"]:
+                                self.config["DeviceProperties"]["Add"][device.pci_path].update({"disable-metal": 1, "force-compat": 1})
+                            else:
+                                self.config["DeviceProperties"]["Add"][device.pci_path] = {"disable-metal": 1, "force-compat": 1}
+                            if self.get_kext_by_bundle_path("WhateverGreen.kext")["Enabled"] is False:
+                                self.enable_kext("WhateverGreen.kext", self.constants.whatevergreen_version, self.constants.whatevergreen_path)
+                            self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].update({"nvda_drv": binascii.unhexlify("31")})
+                            if "nvda_drv" not in self.config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]:
+                                self.config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"] += ["nvda_drv"]
+                        else:
+                            if "ngfxgl=1 ngfxcompat=1" not in self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"]:
+                                self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " ngfxgl=1 ngfxcompat=1"
+                            if self.get_kext_by_bundle_path("WhateverGreen.kext")["Enabled"] is False:
+                                self.enable_kext("WhateverGreen.kext", self.constants.whatevergreen_version, self.constants.whatevergreen_path)
+                            self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"].update({"nvda_drv": binascii.unhexlify("31")})
+                            if "nvda_drv" not in self.config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]:
+                                self.config["NVRAM"]["Delete"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"] += ["nvda_drv"]
+
 
         if self.constants.disable_tb is True and self.model in ["MacBookPro11,1", "MacBookPro11,2", "MacBookPro11,3", "MacBookPro11,4", "MacBookPro11,5"]:
             print("- Disabling 2013-2014 laptop Thunderbolt Controller")
@@ -704,6 +782,8 @@ class BuildOpenCore:
             elif self.computer.bluetooth_chipset == "3rd Party Bluetooth 4.0 Hub":
                 print("- Detected 3rd Party Chipset")
                 self.enable_kext("BlueToolFixup.kext", self.constants.bluetool_version, self.constants.bluetool_path)
+                print("- Enabling Bluetooth FeatureFlags")
+                self.config["Kernel"]["Quirks"]["ExtendBTFeatureFlags"] = True
         elif smbios_data.smbios_dictionary[self.model]["Bluetooth Model"] <= bluetooth_data.bluetooth_data.BRCM20702_v1.value:
             print("- Fixing Legacy Bluetooth for macOS Monterey")
             self.enable_kext("BlueToolFixup.kext", self.constants.bluetool_version, self.constants.bluetool_path)
@@ -782,7 +862,7 @@ class BuildOpenCore:
                         print("- Adding SATA Hibernation Patch")
                         self.config["Kernel"]["Quirks"]["ThirdPartyDrives"] = True
                         break
-        
+
         # Apple RAID Card check
         if not self.constants.custom_model:
             if self.computer.storage:
@@ -820,12 +900,22 @@ class BuildOpenCore:
             print("- Setting Vault configuration")
             self.config["Misc"]["Security"]["Vault"] = "Secure"
             self.get_efi_binary_by_path("OpenShell.efi", "Misc", "Tools")["Enabled"] = False
-        if self.constants.custom_sip_value:
-            print(f"- Setting SIP value to: {self.constants.custom_sip_value}")
-            self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = utilities.string_to_hex(self.constants.custom_sip_value.lstrip("0x"))
-        elif self.constants.sip_status is False:
-            print("- Set SIP to allow Root Volume patching")
-            self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = binascii.unhexlify("030A0000")
+        if self.constants.sip_status is False or self.constants.custom_sip_value:
+            # Work-around 12.3 bug where Electron apps no longer launch with SIP lowered
+            # Unknown whether this is intended behavior or not, revisit with 12.4
+            print("- Adding ipc_control_port_options=0 to boot-args")
+            self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " ipc_control_port_options=0"
+            # Adds AutoPkgInstaller for Automatic OpenCore-Patcher installation
+            # Only install if running the GUI (AutoPkg-Assets.pkg requires the GUI)
+            if self.constants.wxpython_variant is True:
+                self.enable_kext("AutoPkgInstaller.kext", self.constants.autopkg_version, self.constants.autopkg_path)
+            if self.constants.custom_sip_value:
+                print(f"- Setting SIP value to: {self.constants.custom_sip_value}")
+                self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = utilities.string_to_hex(self.constants.custom_sip_value.lstrip("0x"))
+            elif self.constants.sip_status is False:
+                print("- Set SIP to allow Root Volume patching")
+                self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["csr-active-config"] = binascii.unhexlify("02080000")
+
         # if self.constants.amfi_status is False:
         #     print("- Disabling AMFI")
         #     self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["boot-args"] += " amfi_get_out_of_my_way=1"
@@ -891,10 +981,10 @@ class BuildOpenCore:
             self.get_item_by_kv(self.config["Kernel"]["Patch"], "Identifier", "com.apple.filesystems.apfs")["Enabled"] = True
             # Lets us check in sys_patch.py if config supports FileVault
             self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Settings"] += " -allow_fv"
-        if self.constants.disable_msr_power_ctl is True and self.model.startswith("MacBook"):
-            print("- Disabling Battery Throttling")
+        if self.constants.disable_msr_power_ctl is True:
+            print("- Disabling Firmware Throttling")
             if smbios_data.smbios_dictionary[self.model]["CPU Generation"] >= cpu_data.cpu_data.nehalem.value:
-                # Nehalem and newer MacBooks force firmware throttling via MSR_POWER_CTL
+                # Nehalem and newer systems force firmware throttling via MSR_POWER_CTL
                 self.enable_kext("SimpleMSR.kext", self.constants.simplemsr_version, self.constants.simplemsr_path)
         if self.constants.disable_connectdrivers is True:
             print("- Disabling ConnectDrivers")
@@ -902,7 +992,7 @@ class BuildOpenCore:
         if self.constants.nvram_write is False:
             print("- Disabling Hardware NVRAM Write")
             self.config["NVRAM"]["WriteFlash"] = False
-        if self.get_item_by_kv(self.config["Kernel"]["Patch"], "Comment", "Reroute kern.hv_vmm_present patch (1)")["Enabled"] is True:
+        if self.get_item_by_kv(self.config["Kernel"]["Patch"], "Comment", "Reroute kern.hv_vmm_present patch (1)")["Enabled"] is True and self.constants.set_content_caching is True:
             # Add Content Caching patch
             print("- Fixing Content Caching support")
             if self.get_kext_by_bundle_path("RestrictEvents.kext")["Enabled"] is False:
@@ -912,6 +1002,11 @@ class BuildOpenCore:
             # Ensure this is done at the end so all previous RestrictEvents patches are applied
             # RestrictEvents and EFICheckDisabler will confilict if both are injected
             self.enable_kext("EFICheckDisabler.kext", self.constants.restrictevents_version, self.constants.efi_disabler_path)
+        if self.constants.set_vmm_cpuid is True:
+            # Should be unneeded with our sysctl VMM patch, however for reference purposes we'll leave it here
+            # Ref: https://forums.macrumors.com/threads/opencore-on-the-mac-pro.2207814/
+            self.config["Kernel"]["Emulate"]["Cpuid1Data"] = binascii.unhexlify("00000000000000000000008000000000")
+            self.config["Kernel"]["Emulate"]["Cpuid1Mask"] = binascii.unhexlify("00000000000000000000008000000000")
 
     def set_smbios(self):
         spoofed_model = self.model
@@ -973,9 +1068,34 @@ class BuildOpenCore:
             self.config["PlatformInfo"]["UpdateSMBIOS"] = True
             self.config["PlatformInfo"]["UpdateDataHub"] = True
 
+            if self.constants.custom_serial_number != "" and self.constants.custom_board_serial_number != "":
+                print("- Adding custom serial numbers")
+                sn = self.constants.custom_serial_number
+                mlb = self.constants.custom_board_serial_number
+
+                # Serial Number
+                self.config["PlatformInfo"]["SMBIOS"]["ChassisSerialNumber"] = sn
+                self.config["PlatformInfo"]["SMBIOS"]["SystemSerialNumber"] = sn
+                self.config["PlatformInfo"]["DataHub"]["SystemSerialNumber"] = sn
+                self.config["PlatformInfo"]["PlatformNVRAM"]["SystemSerialNumber"] = sn
+                self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-SN"] = sn
+
+                # Board Serial Number
+                self.config["PlatformInfo"]["SMBIOS"]["BoardSerialNumber"] = mlb
+                self.config["PlatformInfo"]["PlatformNVRAM"]["BoardSerialNumber"] = mlb
+                self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-MLB"] = mlb
+
+
+
         def moderate_serial_patch(self):
             if self.constants.custom_cpu_model == 0 or self.constants.custom_cpu_model == 1:
                 self.config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537
+            if self.constants.custom_serial_number != "" and self.constants.custom_board_serial_number != "":
+                print("- Adding custom serial numbers")
+                self.config["PlatformInfo"]["Generic"]["SystemSerialNumber"] = self.constants.custom_serial_number
+                self.config["PlatformInfo"]["Generic"]["MLB"] = self.constants.custom_board_serial_number
+                self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-SN"] = self.constants.custom_serial_number
+                self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-MLB"] = self.constants.custom_board_serial_number
             self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["run-efi-updater"] = "No"
             self.config["PlatformInfo"]["Automatic"] = True
             self.config["PlatformInfo"]["UpdateDataHub"] = True
@@ -987,8 +1107,14 @@ class BuildOpenCore:
         def advanced_serial_patch(self):
             if self.constants.custom_cpu_model == 0 or self.constants.custom_cpu_model == 1:
                 self.config["PlatformInfo"]["Generic"]["ProcessorType"] = 1537
-            macserial_output = subprocess.run([self.constants.macserial_path] + f"-g -m {self.spoofed_model} -n 1".split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            macserial_output = macserial_output.stdout.decode().strip().split(" | ")
+            if self.constants.custom_serial_number == "" or self.constants.custom_board_serial_number == "":
+                macserial_output = subprocess.run([self.constants.macserial_path] + f"-g -m {self.spoofed_model} -n 1".split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                macserial_output = macserial_output.stdout.decode().strip().split(" | ")
+                sn = macserial_output[0]
+                mlb = macserial_output[1]
+            else:
+                sn = self.constants.custom_serial_number
+                mlb = self.constants.custom_board_serial_number
             self.config["NVRAM"]["Add"]["7C436110-AB2A-4BBB-A880-FE41995C9F82"]["run-efi-updater"] = "No"
             self.config["PlatformInfo"]["Automatic"] = True
             self.config["PlatformInfo"]["UpdateDataHub"] = True
@@ -997,10 +1123,12 @@ class BuildOpenCore:
             self.config["UEFI"]["ProtocolOverrides"]["DataHub"] = True
             self.config["PlatformInfo"]["Generic"]["ROM"] = binascii.unhexlify("0016CB445566")
             self.config["PlatformInfo"]["Generic"]["SystemProductName"] = self.spoofed_model
-            self.config["PlatformInfo"]["Generic"]["SystemSerialNumber"] = macserial_output[0]
-            self.config["PlatformInfo"]["Generic"]["MLB"] = macserial_output[1]
+            self.config["PlatformInfo"]["Generic"]["SystemSerialNumber"] = sn
+            self.config["PlatformInfo"]["Generic"]["MLB"] = mlb
             self.config["PlatformInfo"]["Generic"]["SystemUUID"] = str(uuid.uuid4()).upper()
-    
+            self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-SN"] = sn
+            self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-MLB"] = mlb
+
 
         if self.constants.serial_settings == "Moderate":
             print("- Using Moderate SMBIOS patching")
@@ -1024,6 +1152,18 @@ class BuildOpenCore:
                 print("- Detected UEFI 1.2 or older Mac, updating BoardProduct")
                 self.config["PlatformInfo"]["DataHub"]["BoardProduct"] = self.spoofed_board
                 self.config["PlatformInfo"]["UpdateDataHub"] = True
+
+            if self.constants.custom_serial_number != "" and self.constants.custom_board_serial_number != "":
+                print("- Adding custom serial numbers")
+                self.config["PlatformInfo"]["Automatic"] = True
+                self.config["PlatformInfo"]["UpdateDataHub"] = True
+                self.config["PlatformInfo"]["UpdateNVRAM"] = True
+                self.config["PlatformInfo"]["UpdateSMBIOS"] = True
+                self.config["UEFI"]["ProtocolOverrides"]["DataHub"] = True
+                self.config["PlatformInfo"]["Generic"]["SystemSerialNumber"] = self.constants.custom_serial_number
+                self.config["PlatformInfo"]["Generic"]["MLB"] = self.constants.custom_board_serial_number
+                self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-SN"] = self.constants.custom_serial_number
+                self.config["NVRAM"]["Add"]["4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102"]["OCLP-Spoofed-MLB"] = self.constants.custom_board_serial_number
 
         # USB Map and CPUFriend Patching
         if (
@@ -1189,7 +1329,7 @@ class BuildOpenCore:
 
     def build_opencore(self):
         self.build_efi()
-        if self.constants.allow_oc_everywhere is False or self.constants.allow_native_spoofs is True:
+        if self.constants.allow_oc_everywhere is False or self.constants.allow_native_spoofs is True or (self.constants.custom_serial_number != "" and self.constants.custom_board_serial_number != ""):
             self.set_smbios()
         self.cleanup()
         self.sign_files()

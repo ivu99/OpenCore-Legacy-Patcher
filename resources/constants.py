@@ -2,8 +2,6 @@
 # Define Files
 # Copyright (C) 2020-2022, Dhinak G, Mykola Grymalyuk
 
-from __future__ import print_function
-
 from pathlib import Path
 from typing import Optional
 
@@ -14,8 +12,8 @@ from data import os_data
 class Constants:
     def __init__(self):
         # Patcher Versioning
-        self.patcher_version = "0.4.2"  # OpenCore-Legacy-Patcher
-        self.patcher_support_pkg_version = "0.2.9"  #  PatcherSupportPkg
+        self.patcher_version = "0.4.6"  # OpenCore-Legacy-Patcher
+        self.patcher_support_pkg_version = "0.5.1"  #  PatcherSupportPkg
         self.url_patcher_support_pkg = "https://github.com/dortania/PatcherSupportPkg/releases/download/"
         self.nightly_url_patcher_support_pkg = "https://nightly.link/dortania/PatcherSupportPkg/workflows/build/master/"
         self.discord_link = "https://discord.gg/rqdPgH8xSN"
@@ -23,27 +21,30 @@ class Constants:
         self.repo_link = "https://github.com/dortania/OpenCore-Legacy-Patcher"
         self.repo_link_latest = f"{self.repo_link}/releases/tag/{self.patcher_version}"
         self.copyright_date = "Copyright © 2020-2022 Dortania"
+        self.installer_pkg_url = f"{self.repo_link}/releases/download/{self.patcher_version}/AutoPkg-Assets.pkg"
+        self.installer_pkg_url_nightly = "http://nightly.link/dortania/OpenCore-Legacy-Patcher/workflows/build-app-wxpython/main/AutoPkg-Assets.pkg.zip"
 
         # OpenCore Versioning
         # https://github.com/acidanthera/OpenCorePkg
-        self.opencore_commit = "b530a29 - 01-11-2022"
-        self.opencore_version = "0.7.7"
+        self.opencore_commit = "30798fb - 04-18-2022"
+        self.opencore_version = "0.8.0"
 
         # Kext Versioning
         ## Acidanthera
         ## https://github.com/acidanthera
-        self.lilu_version = "1.5.9"  #               Lilu
-        self.whatevergreen_version = "1.5.6"  #      WhateverGreen
+        self.lilu_version = "1.6.0"  #               Lilu
+        self.whatevergreen_version = "1.5.8"  #      WhateverGreen
         self.airportbcrmfixup_version = "2.1.3"  #   AirPortBrcmFixup
         self.nvmefix_version = "1.0.9"  #            NVMeFix
         self.applealc_version = "1.6.3"  #           AppleALC
         self.restrictevents_version = "1.0.6"  #     RestrictEvents
         self.restrictevents_mbp_version = "1.0.6"  # RestrictEvents blocking displaypolicyd (see RestrictEvents-MBP91.patch)
-        self.featureunlock_version = "1.0.6"  #      FeatureUnlock
+        self.featureunlock_version = "1.0.8"  #      FeatureUnlock
         self.debugenhancer_version = "1.0.4"  #      DebugEnhancer
-        self.cpufriend_version = "1.2.4"  #          CPUFriend
-        self.bluetool_version = "2.6.1"  #           BlueToolFixup (BrcmPatchRAM)
+        self.cpufriend_version = "1.2.5"  #          CPUFriend
+        self.bluetool_version = "2.6.2"  #           BlueToolFixup (BrcmPatchRAM)
         self.cslvfixup_version = "2.6.1"  #          CSLVFixup
+        self.autopkg_version = "1.0.0"  #            AutoPkgInstaller
 
         ## Apple
         ## https://www.apple.com
@@ -54,13 +55,14 @@ class Constants:
         self.apple_trackpad = "1.0.1"  #       AppleUSBTrackpad
         self.apple_isight_version = "1.0.0"  # AppleiSight
         self.apple_raid_version = "1.0.0"  #   AppleRAIDCard
+        self.apfs_zlib_version = "12.3.1"  #   NoAVXFSCompressionTypeZlib
 
         ## Apple - Dortania Modified
         self.bcm570_version = "1.0.2"  #             CatalinaBCM5701Ethernet
+        self.i210_version = "1.0.0"  #               CatalinaIntelI210Ethernet
         self.corecaptureelcap_version = "1.0.1"  #   corecaptureElCap
         self.io80211elcap_version = "2.0.0"  #       IO80211ElCap
-        self.io80211high_sierra_version = "1.0.1"  # IO80211HighSierra
-        self.io80211mojave_version = "1.0.1"  #      IO80211Mojave
+        self.bigsursdxc_version = "1.0.0"  #         BigSurSDXC
 
         ## Dortania
         ## https://github.com/dortania
@@ -68,11 +70,11 @@ class Constants:
         self.smcspoof_version = "1.0.0"  #           SMC-Spoof
         self.mce_version = "1.0.0"  #                AppleMCEReporterDisabler
         self.btspoof_version = "1.0.0"  #            Bluetooth-Spoof
+        self.aspp_override_version = "1.0.1"  #      ACPI_SMC_PlatformPlugin Override
 
         ## Syncretic
         ## https://forums.macrumors.com/members/syncretic.1173816/
         ## https://github.com/reenigneorcim/latebloom
-        self.latebloom_version = "0.22"  #   Latebloom
         self.mousse_version = "0.95"  #      MouSSE
         self.telemetrap_version = "1.0.0"  # telemetrap
 
@@ -102,6 +104,9 @@ class Constants:
         self.launcher_binary = None #       Determine launch binary (ie. Python vs PyInstaller)
         self.launcher_script = None  #      Determine launch file (if run via Python)
         self.ignore_updates = False  #      Ignore OCLP updates
+        self.wxpython_variant = False #     Determine if using wxPython variant
+        self.unpack_thread = None  #        Determine if unpack thread finished
+        self.cli_mode = False  #            Determine if running in CLI mode
 
         ## Hardware
         self.computer: device_probe.Computer = None  # type: ignore
@@ -122,21 +127,17 @@ class Constants:
         self.verbose_debug = False  # -v
 
         ## SMBIOS Settings
-        self.custom_cpu_model = 2  #        Patch type value
-        self.custom_cpu_model_value = ""  # New CPU name within About This Mac
-        self.serial_settings = "None"  #    Set SMBIOS level used
-        self.override_smbios = "Default"  # Set SMBIOS model used
-        self.allow_native_spoofs = False  # Allow native models to recieve spoofs
+        self.custom_cpu_model = 2  #            Patch type value
+        self.custom_cpu_model_value = ""  #     New CPU name within About This Mac
+        self.serial_settings = "None"  #        Set SMBIOS level used
+        self.override_smbios = "Default"  #     Set SMBIOS model used
+        self.allow_native_spoofs = False  #     Allow native models to recieve spoofs
+        self.custom_serial_number = ""  #       Set SMBIOS serial number
+        self.custom_board_serial_number = ""  # Set SMBIOS board serial number
 
         ## FeatureUnlock Settings
         self.fu_status = True   #   Enable FeatureUnlock
         self.fu_arguments = None  # Set FeatureUnlock arguments
-
-        ## Latebloom Settings
-        self.latebloom_status = False  # Latebloom Enabled
-        self.latebloom_delay = 0  #      Delay between each PCIe Probe
-        self.latebloom_range = 0  #      Range each delay can differ
-        self.latebloom_debug = 0  #      Debug Setting
 
         ## Security Settings
         self.apecid_support = False  #    ApECID
@@ -163,9 +164,8 @@ class Constants:
         self.imac_vendor = "None"  #   Set MXM GPU vendor
         self.imac_model = "" #         Set MXM GPU model
         self.drm_support = False  #    Set iMac14,x DRM support
-        self.allow_ivy_igpu = False  # Set iMac13,x iGPU support
-        self.moj_cat_accel = False  #  Set Mojave/Catalina Acceleration support
         self.allow_ts2_accel = True  # Set TeraScale 2 Acceleration support
+        self.force_nv_web = False  #   Force Nvidia Web Drivers on Tesla and Kepler
 
         ## Miscellaneous
         self.disallow_cpufriend = False  #     Disable CPUFriend
@@ -177,15 +177,24 @@ class Constants:
         self.force_latest_psp = False  #       Force latest PatcherSupportPkg
         self.disable_msr_power_ctl = False  #  Disable MSR Power Control (missing battery throttling)
         self.software_demux = False  #         Enable Software Demux patch set
-        self.force_vmm = False  #              Force VMM patch 
+        self.force_vmm = False  #              Force VMM patch
         self.custom_sip_value = None  #        Set custom SIP value
         self.walkthrough = False  #            Enable Walkthrough
         self.disable_connectdrivers = False  # Disable ConnectDrivers (hibernation)
         self.allow_3rd_party_drives = True   # Allow ThridPartyDrives quirk
+        self.set_content_caching = False  #    Set Content Caching
+        self.allow_nvme_fixing = True  #       Allow NVMe Kernel Space Patches
+        self.disable_xcpm = False  #           Disable XCPM (X86PlatformPlugin.kext)
+        self.root_patcher_succeded = False  #  Determine if root patcher succeeded
+        self.booted_oc_disk = None  #          Determine current disk OCLP booted from
+        self.start_build_install = False  #    Determine if build install should be started
+        self.host_is_non_metal = False  #      Determine if host is non-metal (ie. enable UI hacks)
+        self.needs_to_open_preferences = False  # Determine if preferences need to be opened
+        self.host_is_hackintosh = False #     Determine if host is Hackintosh
+        self.commit_info = (None, None, None)
+        self.set_vmm_cpuid = False  #          Set VMM bit inside CPUID
 
         self.legacy_accel_support = [
-            os_data.os_data.mojave,
-            os_data.os_data.catalina,
             os_data.os_data.big_sur,
             os_data.os_data.monterey,
         ]
@@ -200,10 +209,10 @@ class Constants:
     def plist_template(self):
         return self.payload_path / Path("Config/config.plist")
 
-    # Mount Location
+    # Launch Agent
     @property
-    def payload_mnt1_path(self):
-        return self.payload_path / Path("mnt1")
+    def auto_patch_launch_agent_path(self):
+        return self.payload_path / Path("com.dortania.opencore-legacy-patcher.auto-patch.plist")
 
     # ACPI
     @property
@@ -213,7 +222,7 @@ class Constants:
     @property
     def windows_ssdt_path(self):
         return self.payload_path / Path("ACPI/SSDT-PCI.aml")
-    
+
     @property
     def demux_ssdt_path(self):
         return self.payload_path / Path("ACPI/SSDT-DGPU.aml")
@@ -230,7 +239,7 @@ class Constants:
     @property
     def xhci_driver_path(self):
         return self.payload_path / Path("Drivers/XhciDxe.efi")
-    
+
     @property
     def usb_bus_driver_path(self):
         return self.payload_path / Path("Drivers/UsbBusDxe.efi")
@@ -238,11 +247,11 @@ class Constants:
     @property
     def diags_launcher_path(self):
         return self.payload_path / Path("Drivers/diags.efi")
-    
+
     @property
     def list_txt_path(self):
         return self.payload_path / Path("List.txt")
-    
+
     @property
     def installer_sh_path(self):
         return self.payload_path / Path("Installer.sh")
@@ -281,6 +290,10 @@ class Constants:
         return self.payload_kexts_path / Path(f"Ethernet/CatalinaBCM5701Ethernet-v{self.bcm570_version}.zip")
 
     @property
+    def i210_path(self):
+        return self.payload_kexts_path / Path(f"Ethernet/CatalinaIntelI210Ethernet-v{self.i210_version}.zip")
+
+    @property
     def marvel_path(self):
         return self.payload_kexts_path / Path(f"Ethernet/MarvelYukonEthernet-v{self.marvel_version}.zip")
 
@@ -291,6 +304,14 @@ class Constants:
     @property
     def mce_path(self):
         return self.payload_kexts_path / Path(f"Misc/AppleMCEReporterDisabler-v{self.mce_version}.zip")
+
+    @property
+    def bigsursdxc_path(self):
+        return self.payload_kexts_path / Path(f"Misc/BigSurSDXC-v{self.bigsursdxc_version}.zip")
+
+    @property
+    def apfs_zlib_path(self):
+        return self.payload_kexts_path / Path(f"Misc/NoAVXFSCompressionTypeZlib-v{self.apfs_zlib_version}.zip")
 
     @property
     def mousse_path(self):
@@ -307,14 +328,6 @@ class Constants:
     @property
     def io80211elcap_path(self):
         return self.payload_kexts_path / Path(f"Wifi/IO80211ElCap-v{self.io80211elcap_version}.zip")
-
-    @property
-    def io80211high_sierra_path(self):
-        return self.payload_kexts_path / Path(f"Wifi/IO80211HighSierra-v{self.io80211high_sierra_version}.zip")
-
-    @property
-    def io80211mojave_path(self):
-        return self.payload_kexts_path / Path(f"Wifi/IO80211Mojave-v{self.io80211mojave_version}.zip")
 
     @property
     def applealc_path(self):
@@ -341,6 +354,10 @@ class Constants:
         return self.payload_kexts_path / Path(f"Misc/Bluetooth-Spoof-v{self.btspoof_version}.zip")
 
     @property
+    def aspp_override_path(self):
+        return self.payload_kexts_path / Path(f"Misc/ASPP-Override-v{self.aspp_override_version}.zip")
+
+    @property
     def nvmefix_path(self):
         return self.payload_kexts_path / Path(f"Acidanthera/NVMeFix-v{self.nvmefix_version}-{self.kext_variant}.zip")
 
@@ -361,29 +378,29 @@ class Constants:
         return self.payload_kexts_path / Path(f"Acidanthera/CSLVFixup-v{self.cslvfixup_version}.zip")
 
     @property
+    def autopkg_path(self):
+        return self.payload_kexts_path / Path(f"Acidanthera/AutoPkgInstaller-v{self.autopkg_version}-{self.kext_variant}.zip")
+
+    @property
     def innie_path(self):
         return self.payload_kexts_path / Path(f"Misc/Innie-v{self.innie_version}.zip")
-    
+
     @property
     def simplemsr_path(self):
         return self.payload_kexts_path / Path(f"Misc/SimpleMSR-v{self.simplemsr_version}.zip")
-    
+
     @property
     def gpu_wake_path(self):
         return self.payload_kexts_path / Path(f"Misc/AMDGPUWakeHandler-v{self.gpu_wake_version}.zip")
 
     @property
-    def latebloom_path(self):
-        return self.payload_kexts_path / Path(f"Misc/latebloom-v{self.latebloom_version}.zip")
-
-    @property
     def apple_trackpad_path(self):
         return self.payload_kexts_path / Path(f"Misc/AppleUSBTrackpad-v{self.apple_trackpad}.zip")
-    
+
     @property
     def apple_isight_path(self):
         return self.payload_kexts_path / Path(f"Misc/LegacyUSBVideoSupport-v{self.apple_isight_version}.zip")
-    
+
     @property
     def apple_raid_path(self):
         return self.payload_kexts_path / Path(f"Misc/AppleRAIDCard-v{self.apple_raid_version}.zip")
@@ -501,7 +518,7 @@ class Constants:
     @property
     def ocvalidate_path(self):
         return self.payload_path / Path(f"Tools/ocvalidate-{self.opencore_version}")
-    
+
     @property
     def oclp_helper_path(self):
         return self.payload_path / Path("Tools/OCLP-Helper")
@@ -531,168 +548,23 @@ class Constants:
     def gui_path(self):
         return self.payload_path / Path("Icon/Resources.zip")
 
+    @property
+    def installer_pkg_path(self):
+        return self.payload_path / Path("AutoPkg-Assets.pkg")
+
+    @property
+    def installer_pkg_zip_path(self):
+        return self.payload_path / Path("AutoPkg-Assets.pkg.zip")
+
     # Apple Payloads Paths
+    @property
+    def payload_local_binaries_root_path(self):
+        return self.payload_path / Path("Universal-Binaries")
 
     @property
-    def payload_apple_root_path_zip(self):
-        return self.payload_path / Path("Apple.zip")
+    def payload_local_binaries_root_path_zip(self):
+        return self.payload_path / Path("Universal-Binaries.zip")
 
-    @property
-    def payload_apple_root_path(self):
-        return self.payload_path / Path("Apple")
-
-    @property
-    def payload_apple_kexts_path(self):
-        return self.payload_apple_root_path / Path("Extensions")
-
-    @property
-    def payload_apple_coreservices_path(self):
-        return self.payload_apple_root_path / Path("CoreServices")
-
-    @property
-    def payload_apple_usr_path(self):
-        return self.payload_apple_root_path / Path("usr")
-
-    @property
-    def payload_apple_libexec_path(self):
-        return self.payload_apple_usr_path / Path("libexec")
-    
-    @property
-    def payload_apple_application_support(self):
-        return self.payload_apple_root_path / Path("Application Support")
-    
-    @property
-    def payload_apple_private_path(self):
-        return self.payload_apple_root_path / Path("private")
-    
-    @property
-    def payload_apple_etc_path(self):
-        return self.payload_apple_private_path / Path("etc")
-
-    @property
-    def payload_apple_frameworks_path(self):
-        return self.payload_apple_root_path / Path("Frameworks")
-
-    @property
-    def payload_apple_frameworks_path_accel(self):
-        return self.payload_apple_frameworks_path / Path("Graphics-Acceleration-Non-Metal")
-
-    @property
-    def payload_apple_frameworks_path_accel_ts2(self):
-        return self.payload_apple_frameworks_path / Path("Graphics-Acceleration-TeraScale-2")
-
-    @property
-    def payload_apple_frameworks_path_accel_ivy(self):
-        return self.payload_apple_frameworks_path / Path("Graphics-Acceleration-Ivy-Bridge")
-    
-    @property
-    def payload_apple_frameworks_path_accel_kepler(self):
-        return self.payload_apple_frameworks_path / Path("Graphics-Acceleration-Kepler")
-
-    @property
-    def payload_apple_lauchd_path(self):
-        return self.payload_apple_root_path / Path("LaunchDaemons")
-
-    @property
-    def payload_apple_private_frameworks_path(self):
-        return self.payload_apple_root_path / Path("PrivateFrameworks")
-
-    @property
-    def payload_apple_private_frameworks_path_accel(self):
-        return self.payload_apple_private_frameworks_path / Path("Graphics-Acceleration-Non-Metal")
-
-    @property
-    def payload_apple_private_frameworks_path_accel_ts2(self):
-        return self.payload_apple_private_frameworks_path / Path("Graphics-Acceleration-TeraScale-2")
-
-    @property
-    def payload_apple_private_frameworks_path_accel_ivy(self):
-        return self.payload_apple_private_frameworks_path / Path("Graphics-Acceleration-Ivy-Bridge")
-
-    @property
-    def payload_apple_private_frameworks_path_brightness(self):
-        return self.payload_apple_private_frameworks_path / Path("Brightness-Control")
-
-    @property
-    def payload_apple_private_frameworks_path_legacy_drm(self):
-        return self.payload_apple_private_frameworks_path / Path("Legacy-GVA")
-
-    # Apple Extensions
-    # El Capitan Extensions
-    @property
-    def audio_path(self):
-        return self.payload_apple_kexts_path / Path("Audio")
-
-    # High Sierra Extensions
-    @property
-    def audio_v2_path(self):
-        return self.payload_apple_kexts_path / Path("Audio-v2")
-
-    # GPU Kexts and Bundles
-
-    @property
-    def legacy_graphics(self):
-        return self.payload_apple_kexts_path / Path("Graphics-Acceleration")
-
-    @property
-    def legacy_nvidia_path(self):
-        return self.legacy_graphics / Path("Nvidia-Tesla")
-
-    @property
-    def legacy_nvidia_kepler_path(self):
-        return self.legacy_graphics / Path("Nvidia-Kepler")
-
-    @property
-    def legacy_amd_path(self):
-        return self.legacy_graphics / Path("AMD-TeraScale")
-
-    @property
-    def legacy_amd_path_ts2(self):
-        return self.legacy_graphics / Path("AMD-TeraScale-2")
-
-    @property
-    def legacy_intel_gen1_path(self):
-        return self.legacy_graphics / Path("Intel-Gen5-Ironlake")
-
-    @property
-    def legacy_intel_gen2_path(self):
-        return self.legacy_graphics / Path("Intel-Gen6-SandyBridge")
-
-    @property
-    def legacy_intel_gen3_path(self):
-        return self.legacy_graphics / Path("Intel-Gen7-IvyBridge")
-
-    @property
-    def legacy_general_path(self):
-        return self.legacy_graphics / Path("General-Patches")
-
-    @property
-    def legacy_brightness(self):
-        return self.payload_apple_kexts_path / Path("Brightness-Control")
-
-    @property
-    def legacy_mux_path(self):
-        return self.payload_apple_kexts_path / Path("Legacy-Mux")
-
-    @property
-    def legacy_wifi_coreservices(self):
-        return self.payload_apple_coreservices_path / Path("Legacy-Wifi")
-
-    @property
-    def legacy_wifi_libexec(self):
-        return self.payload_apple_libexec_path / Path("Legacy-Wifi")
-    
-    @property
-    def legacy_wifi_support(self):
-        return self.payload_apple_application_support / Path("Legacy-Wifi")
-    
-    @property
-    def legacy_keyboard_backlight_support(self):
-        return self.payload_apple_application_support / Path("Keyboard-Backlight")
-    
-    @property
-    def legacy_dropbox_support(self):
-        return self.payload_apple_application_support / Path("Dropbox")
 
     sbm_values = [
         "j137ap",  #  iMacPro1,1
@@ -712,15 +584,6 @@ class Constants:
         "j185ap",  #  iMac20,1
         "j185fap",  # iMac20,2
         # "x86legacy",  # non-T2 Macs/VMs, Monterey's boot.efi enforces this on all Macs
-    ]
-
-    sandy_board_id = [
-        "Mac-E43C1C25D4880AD6",  # MacBookPro12,1
-        "Mac-06F11F11946D27C5",  # MacBookPro11,5
-        "Mac-9F18E312C5C2BF0B",  # MacBookAir7,1
-        "Mac-937CB26E2E02BB01",  # MacBookAir7,2
-        "Mac-35C5E08120C7EEAF",  # Macmini7,1
-        "Mac-7BA5B2D9E42DDD94",  # iMacPro1,1
     ]
 
     sandy_board_id_stock = [

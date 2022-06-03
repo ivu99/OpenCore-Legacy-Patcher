@@ -1,6 +1,7 @@
 # Generate Default Data
-from resources import utilities, device_probe, generate_smbios
-from data import model_array, smbios_data, cpu_data
+from resources import utilities, device_probe, generate_smbios, global_settings
+from data import model_array, smbios_data, cpu_data, os_data
+import subprocess
 
 
 class generate_defaults:
@@ -10,8 +11,17 @@ class generate_defaults:
         settings.sip_status = True
         settings.secure_status = False  # Default false for Monterey
         settings.amfi_status = True
+        settings.custom_serial_number = ""
+        settings.custom_board_serial_number = ""
 
         if host_is_target:
+            settings.custom_serial_number = utilities.get_nvram("OCLP-Spoofed-SN", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
+            settings.custom_board_serial_number = utilities.get_nvram("OCLP-Spoofed-MLB", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
+            if settings.custom_serial_number is None or settings.custom_board_serial_number is None:
+                # If either variables are missing, we assume something is wrong with the spoofed variables and reset
+                settings.custom_serial_number = ""
+                settings.custom_board_serial_number = ""
+
             if settings.computer.usb_controllers:
                 try:
                     if smbios_data.smbios_dictionary[model]["CPU Generation"] < cpu_data.cpu_data.ivy_bridge.value:
@@ -25,13 +35,29 @@ class generate_defaults:
                     pass
             if utilities.check_metal_support(device_probe, settings.computer) is False:
                 settings.disable_cs_lv = True
-            if settings.computer.gpus: 
+                settings.secure_status = False
+                settings.sip_status = False
+                settings.allow_fv_root = True
+                settings.host_is_non_metal = True
+
+                # If a Mac is non-Metal based, Beta Blur is highly recommended
+                if settings.detected_os >= os_data.os_data.big_sur:
+                    for arg in ["Moraea_BlurBeta"]:
+                        # If user explicitly set the blur, don't override
+                        arg_result = subprocess.run(["defaults", "read", "-g", arg], stdout=subprocess.PIPE).stdout.decode("utf-8").strip()
+                        if arg_result not in ["true", "1", "false", "0"]:
+                            subprocess.run(["defaults", "write", "-g", arg, "-bool", "TRUE"])
+
+            if settings.computer.gpus:
                 for gpu in settings.computer.gpus:
                     if gpu.arch == device_probe.NVIDIA.Archs.Kepler:
                         # 12.0 (B7+): Kepler are now unsupported
                         settings.sip_status = False
                         settings.amfi_status = True
                         settings.allow_fv_root = True  #  Allow FileVault on broken seal
+                        break
+                    elif gpu.arch in [device_probe.NVIDIA.Archs.Fermi, device_probe.NVIDIA.Archs.Maxwell, device_probe.NVIDIA.Archs.Pascal]:
+                        settings.custom_sip_value = "0xA03"
                         break
             if (
                 isinstance(settings.computer.wifi, device_probe.Broadcom)
@@ -41,7 +67,7 @@ class generate_defaults:
                 settings.sip_status = False
                 settings.allow_fv_root = True  #  Allow FileVault on broken seal
 
-            if settings.computer.gpus: 
+            if settings.computer.gpus:
                 for gpu in settings.computer.gpus:
                     if gpu.arch in [
                         device_probe.AMD.Archs.Legacy_GCN_7000,
@@ -85,6 +111,11 @@ class generate_defaults:
             settings.allow_fv_root = True  #  Allow FileVault on broken seal
             # settings.amfi_status = True  #  Signed bundles, Don't need to explicitly set currently
 
+        if "Book" in model:
+            settings.set_content_caching = False
+        else:
+            settings.set_content_caching = True
+
         custom_cpu_model_value = utilities.get_nvram("revcpuname", "4D1FDA02-38C7-4A6A-9CC6-4BCCA8B30102", decode=True)
         if custom_cpu_model_value is not None:
             # TODO: Fix to not use two separate variables
@@ -100,7 +131,13 @@ class generate_defaults:
         if model in ["MacBookPro8,2", "MacBookPro8,3"]:
             # Users disabling TS2 most likely have a faulty dGPU
             # users can override this in settings
-            settings.allow_ts2_accel = False
+            ts2_status = global_settings.global_settings().read_property("MacBookPro_TeraScale_2_Accel")
+            if ts2_status is True:
+                settings.allow_ts2_accel = True
+            else:
+                global_settings.global_settings().write_property("MacBookPro_TeraScale_2_Accel", False)
+                settings.allow_ts2_accel = False
+
         try:
             if smbios_data.smbios_dictionary[model]["CPU Generation"] < cpu_data.cpu_data.ivy_bridge.value and model != "MacPro5,1":
                 # Sidecar and AirPlay to Mac only blacklist Ivy and newer (as well as MacPro5,1)
@@ -108,6 +145,15 @@ class generate_defaults:
                 settings.fu_arguments = " -disable_sidecar_mac"
             else:
                 settings.fu_arguments = None
+            if smbios_data.smbios_dictionary[model]["CPU Generation"] >= cpu_data.cpu_data.skylake.value:
+                # On 2016-2017 MacBook Pros, 15" devices used a stock Samsung SSD with IONVMeController
+                # Technically this should be patched based on NVMeFix.kext logic,
+                # however Apple deemed the SSD unsupported for enhanced performance
+                # In addition, some upgraded NVMe drives still have issues with enhanced power management
+                # Safest to disable by default, allow user to configure afterwards
+                settings.allow_nvme_fixing = False
+            else:
+                settings.allow_nvme_fixing = True
         except KeyError:
             pass
 
@@ -135,3 +181,7 @@ class generate_defaults:
                     settings.force_vmm = False
         except KeyError:
             pass
+
+        nv_web_status = global_settings.global_settings().read_property("Force_Web_Drivers")
+        if nv_web_status is True:
+            settings.force_nv_web = True

@@ -5,9 +5,7 @@ OpenCore Legacy Patcher at its core is a python-based TUI/CLI based application.
 For developers wishing to validate mainline changes, you may use these nightly links:
 
 * [GUI (Graphical Based App)](https://nightly.link/dortania/OpenCore-Legacy-Patcher/workflows/build-app-wxpython/main/OpenCore-Patcher.app%20%28GUI%29.zip)
-* [GUI (Graphical Based App) - Offline Variant](https://nightly.link/dortania/OpenCore-Legacy-Patcher/workflows/build-app-wxpython-offline/main/OpenCore-Patcher.app%20%28GUI%20Offline%29.zip)
 * [TUI (Text Based App)](https://nightly.link/dortania/OpenCore-Legacy-Patcher/workflows/build-app/main/OpenCore-Patcher-TUI.app.zip)
-* [TUI (Text Based App) - Offline Variant](https://nightly.link/dortania/OpenCore-Legacy-Patcher/workflows/build-app-offline/main/OpenCore-Patcher-TUI.app%20%28Offline%29.zip)
 
 **Warning**: These binaries should not be used without first consulting the [CHANGELOG](./CHANGELOG.md). Do not distribute these links in forums, instead direct to this file.
 
@@ -15,7 +13,7 @@ For developers wishing to validate mainline changes, you may use these nightly l
 
 ## Getting Started
 
-To start, ensure you have python 3.6 or newer installed. Additionally ensure that they were downloaded from the offical source, [python.org](https://www.python.org/downloads/macos/).
+To start, ensure you have python 3.6 or newer installed. Additionally ensure that they were downloaded from the Official source, [python.org](https://www.python.org/downloads/macos/).
 
 * Python installations either preinstalled or provided with Xcode/Xcode Tools are unsupported due to reliablility issues
 
@@ -31,6 +29,16 @@ cd ./OpenCore-Legacy-Patcher
 # Install Python dependacies used by the project
 pip3 install -r requirements.txt
 ```
+
+If you have installation error, see following troubleshooting options:
+
+* Use Python 3.9
+  * Currently our build server uses py3.9 for generating binaries used in releases
+* Use .whl snapshots for installing additional dependancies
+  * [wxPython 4.1.1 wheel for py3.9](https://files.pythonhosted.org/packages/2c/a8/7027e8ca3ba20dc2ed2acd556e31941cb44097ab87d6f81d646a79de4eab/wxPython-4.1.1-cp39-cp39-macosx_10_10_x86_64.whl)
+  * [PyObjc 8.5 wheel for py3](https://files.pythonhosted.org/packages/69/3d/786f379dd669a078cf0c4a686e242c9b643071c23367bfbd3d9a7eb589ec/pyobjc-8.5-py3-none-any.whl)
+  * [Requests 2.27.1 for py2/py3](https://files.pythonhosted.org/packages/2d/61/08076519c80041bc0ffa1a8af0cbd3bf3e2b62af10435d269a9d0f40564d/requests-2.27.1-py2.py3-none-any.whl)
+
 
 ## Running OpenCore Legacy Patcher
 
@@ -68,10 +76,11 @@ The main goal of generating prebuilt binaries is to strip the requirement of a l
 pip3 install pyinstaller
 # Move into project directory
 cd ~/Developer/OpenCore-Legacy-Patcher/
-# Create the pyinstaller based Application (replace OpenCore-Patcher.spec with OpenCore-Patcher-GUI.spec for GUI binary)
-pyinstaller OpenCore-Patcher.spec
-# Post PyInstaller clean up (only for the TUI)
-./after_pyinstaller.sh
+# Create the pyinstaller based Application
+# Optional Arguments
+#    '--build_tui':          Create TUI vairant
+#    '--reset_binaries':     Redownload and generate support files
+python3 Build-Binary.command
 # Open build folder
 open ./dist/
 ```

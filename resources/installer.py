@@ -2,7 +2,8 @@
 from pathlib import Path
 import plistlib
 import subprocess
-from resources import utilities
+import requests
+from resources import utilities, tui_helpers
 
 def list_local_macOS_installers():
     # Finds all applicable macOS installers
@@ -12,26 +13,54 @@ def list_local_macOS_installers():
 
     for application in Path("/Applications").iterdir():
         # Verify whether application has createinstallmedia
-        if (Path("/Applications") / Path(application) / Path("Contents/Resources/createinstallmedia")).exists():
-            plist = plistlib.load((Path("/Applications") / Path(application) / Path("Contents/Info.plist")).open("rb"))
-            try:
-                # Doesn't reflect true OS build, but best to report SDK in the event multiple installers are found with same version
-                app_version = plist["DTPlatformVersion"]
-                clean_name = plist["CFBundleDisplayName"]
+        try:
+            if (Path("/Applications") / Path(application) / Path("Contents/Resources/createinstallmedia")).exists():
+                plist = plistlib.load((Path("/Applications") / Path(application) / Path("Contents/Info.plist")).open("rb"))
                 try:
-                    app_sdk = plist["DTSDKBuild"]
+                    # Doesn't reflect true OS build, but best to report SDK in the event multiple installers are found with same version
+                    app_version = plist["DTPlatformVersion"]
+                    clean_name = plist["CFBundleDisplayName"]
+                    try:
+                        app_sdk = plist["DTSDKBuild"]
+                    except KeyError:
+                        app_sdk = "Unknown"
+
+                    # app_version can sometimes report GM instead of the actual version
+                    # This is a workaround to get the actual version
+                    if app_version.startswith("GM"):
+                        try:
+                            app_version = int(app_sdk[:2])
+                            if app_version < 20:
+                                app_version = f"10.{app_version - 4}"
+                            else:
+                                app_version = f"{app_version - 9}.0"
+                        except ValueError:
+                            app_version = "Unknown"
+                    # Check if App Version is High Sierra or newer
+                    can_add = False
+                    if app_version.startswith("10."):
+                        app_sub_version = app_version.split(".")[1]
+                        if int(app_sub_version) >= 13:
+                            can_add = True
+                        else:
+                            can_add = False
+                    else:
+                        can_add = True
+                    if can_add is True:
+                        application_list.update({
+                            application: {
+                            "Short Name": clean_name,
+                            "Version": app_version,
+                            "Build": app_sdk,
+                            "Path": application,
+                            }
+                        })
                 except KeyError:
-                    app_sdk = "Unknown"
-                application_list.update({
-                    application: {
-                        "Short Name": clean_name,
-                        "Version": app_version,
-                        "Build": app_sdk,
-                        "Path": application,
-                    }
-                })
-            except KeyError:
-                pass
+                    pass
+        except PermissionError:
+            pass
+    # Sort Applications by version
+    application_list = {k: v for k, v in sorted(application_list.items(), key=lambda item: item[1]["Version"])}
     return application_list
 
 def create_installer(installer_path, volume_name):
@@ -59,6 +88,7 @@ def download_install_assistant(download_path, ia_link):
     return False
 
 def install_macOS_installer(download_path):
+    print("- Extracting macOS installer from InstallAssistant.pkg\n  This may take some time")
     args = [
         "osascript",
         "-e",
@@ -78,18 +108,19 @@ def install_macOS_installer(download_path):
         return False
 
 def list_downloadable_macOS_installers(download_path, catalog):
-    avalible_apps = {}
+    available_apps = {}
     if catalog == "DeveloperSeed":
-        link = "https://swscan.apple.com/content/catalogs/others/index-12seed-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog.gz"
+        link = "https://swscan.apple.com/content/catalogs/others/index-12seed-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
     elif catalog == "PublicSeed":
-        link = "https://swscan.apple.com/content/catalogs/others/index-12beta-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog.gz"
+        link = "https://swscan.apple.com/content/catalogs/others/index-12beta-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
     else:
-        link = "https://swscan.apple.com/content/catalogs/others/index-12customerseed-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog.gz"
-    
-    # Download and unzip the catalog
-    if utilities.download_file(link, (Path(download_path) / Path("seed.sucatalog.gz"))):
-        subprocess.run(["gunzip", "-d", "-f", Path(download_path) / Path("seed.sucatalog.gz")])
-        catalog_plist = plistlib.load((Path(download_path) / Path("seed.sucatalog")).open("rb"))
+        link = "https://swscan.apple.com/content/catalogs/others/index-12customerseed-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
+
+    if utilities.verify_network_connection(link) is True:
+        try:
+            catalog_plist = plistlib.loads(requests.get(link).content)
+        except plistlib.InvalidFileException:
+            return available_apps
 
         for item in catalog_plist["Products"]:
             try:
@@ -100,8 +131,10 @@ def list_downloadable_macOS_installers(download_path, catalog):
 
                 for bm_package in catalog_plist["Products"][item]["Packages"]:
                     if "Info.plist" in bm_package["URL"] and "InstallInfo.plist" not in bm_package["URL"]:
-                        utilities.download_file(bm_package["URL"], (Path(download_path) / Path("Info.plist")))
-                        build_plist = plistlib.load((Path(download_path) / Path("Info.plist")).open("rb"))
+                        try:
+                            build_plist = plistlib.loads(requests.get(bm_package["URL"]).content)
+                        except plistlib.InvalidFileException:
+                            continue
                         version = build_plist["MobileAssetProperties"]["OSVersion"]
                         build = build_plist["MobileAssetProperties"]["Build"]
                         try:
@@ -123,7 +156,7 @@ def list_downloadable_macOS_installers(download_path, catalog):
                                 size = ia_package["Size"]
                                 integrity = ia_package["IntegrityDataURL"]
 
-                        avalible_apps.update({
+                        available_apps.update({
                             item: {
                                 "Version": version,
                                 "Build": build,
@@ -136,7 +169,58 @@ def list_downloadable_macOS_installers(download_path, catalog):
                         })
             except KeyError:
                 pass
-    return avalible_apps
+        available_apps = {k: v for k, v in sorted(available_apps.items(), key=lambda x: x[1]['Version'])}
+    return available_apps
+
+def only_list_newest_installers(available_apps):
+    # Takes a dictionary of available installers
+    # Returns a dictionary of only the newest installers
+    # This is used to avoid overwhelming the user with installer options
+
+    # Only strip OSes that we know are supported
+    supported_versions = ["10.13", "10.14", "10.15", "11", "12"]
+
+    for version in supported_versions:
+        remote_version_minor = 0
+        remote_version_security = 0
+
+        # First determine the largest version
+        for ia in available_apps:
+            if available_apps[ia]["Version"].startswith(version):
+                if available_apps[ia]["Variant"] not in ["DeveloperSeed", "PublicSeed"]:
+                    remote_version = available_apps[ia]["Version"].split(".")
+                    if remote_version[0] == "10":
+                        remote_version.pop(0)
+                        remote_version.pop(0)
+                    else:
+                        remote_version.pop(0)
+                    if int(remote_version[0]) > remote_version_minor:
+                        remote_version_minor = int(remote_version[0])
+                        remote_version_security = 0 # Reset as new minor version found
+                    if len(remote_version) > 1:
+                        if int(remote_version[1]) > remote_version_security:
+                            remote_version_security = int(remote_version[1])
+
+        # Now remove all versions that are not the largest
+        for ia in list(available_apps):
+            if available_apps[ia]["Version"].startswith(version):
+                remote_version = available_apps[ia]["Version"].split(".")
+                if remote_version[0] == "10":
+                    remote_version.pop(0)
+                    remote_version.pop(0)
+                else:
+                    remote_version.pop(0)
+                if int(remote_version[0]) < remote_version_minor:
+                    available_apps.pop(ia)
+                elif int(remote_version[0]) == remote_version_minor:
+                    if len(remote_version) > 1:
+                        if int(remote_version[1]) < remote_version_security:
+                            available_apps.pop(ia)
+                    else:
+                        if remote_version_security > 0:
+                            available_apps.pop(ia)
+
+    return available_apps
 
 def format_drive(disk_id):
     # Formats a disk for macOS install
@@ -181,7 +265,7 @@ def select_disk_to_format():
         except KeyError:
             # Avoid crashing with CDs installed
             continue
-    menu = utilities.TUIMenu(
+    menu = tui_helpers.TUIMenu(
         ["Select Disk to write the macOS Installer onto"],
         "Please select the disk you would like to install OpenCore to: ",
         in_between=["Missing drives? Verify they are 14GB+ and external (ie. USB)", "", "Ensure all data is backed up on selected drive, entire drive will be erased!"],
@@ -203,7 +287,7 @@ def select_disk_to_format():
 
     if response == -1:
         return None
-    
+
     return response
 
 
@@ -253,7 +337,18 @@ def generate_installer_creation_script(script_location, installer_path, disk):
     # Implemnting this into a single installer.sh script allows us to only call
     # OCLP-Helper once to avoid nagging the user about permissions
 
+    additional_args = ""
+
     createinstallmedia_path = str(Path(installer_path) / Path("Contents/Resources/createinstallmedia"))
+    plist_path = str(Path(installer_path) / Path("Contents/Info.plist"))
+    if Path(plist_path).exists():
+        plist = plistlib.load(Path(plist_path).open("rb"))
+        if "DTPlatformVersion" in plist:
+            platform_version = plist["DTPlatformVersion"]
+            platform_version = platform_version.split(".")[0]
+            if platform_version[0] == "10":
+                if int(platform_version[1]) < 13:
+                    additional_args = f" --applicationpath '{installer_path}'"
 
     if script_location.exists():
         script_location.unlink()
@@ -261,9 +356,11 @@ def generate_installer_creation_script(script_location, installer_path, disk):
 
     with script_location.open("w") as script:
         script.write(f'''#!/bin/bash
-earse_disk='diskutil eraseDisk HFS+ OCLP-Installer {disk}'
-if $earse_disk; then
-    "{createinstallmedia_path}" --volume /Volumes/OCLP-Installer --nointeraction
+erase_disk='diskutil eraseDisk HFS+ OCLP-Installer {disk}'
+if $erase_disk; then
+    "{createinstallmedia_path}" --volume /Volumes/OCLP-Installer --nointeraction{additional_args}
 fi
         ''')
-    return True
+    if Path(script_location).exists():
+        return True
+    return False

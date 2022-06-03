@@ -1,10 +1,10 @@
-# Updating OpenCore and Co
+# Updating OpenCore and Patches
 
-With OpenCore Legacy Patcher, generally there's very little reason for users to update the OpenCore installed on their machine unless you feel there's a benefit with new versions for your setup.
+With OpenCore Legacy Patcher, generally there's very little reason for users to update the OpenCore installed on their machine unless you feel there's a benefit with new versions for your setup, e.g. Bluetooth has stopped working with a new macOS update. 
 
 For those who do wish to update, it's actually quite easy. Simply [download the latest release](https://github.com/dortania/OpenCore-Legacy-Patcher/releases) and rerun the patcher:
 
-![](../images/first-run.png)
+![](../images/OCLP-GUI-Main-Menu.png)
 
 Then simply rebuild your OpenCore build and install again. Then voila, OpenCore is updated!
 

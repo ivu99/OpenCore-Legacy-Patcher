@@ -1,23 +1,25 @@
 # Copyright (C) 2020-2022, Dhinak G, Mykola Grymalyuk
 
-from __future__ import print_function
-
 import subprocess
 import sys
 from pathlib import Path
+import time
+import threading
 
-from resources import build, cli_menu, constants, utilities, device_probe, os_probe, defaults, arguments, install
+from resources import build, cli_menu, constants, utilities, device_probe, os_probe, defaults, arguments, install, tui_helpers, reroute_payloads, commit_info
 from data import model_array
 
 class OpenCoreLegacyPatcher:
     def __init__(self, launch_gui=False):
         print("- Loading...")
         self.constants = constants.Constants()
+        self.constants.wxpython_variant = launch_gui
         self.generate_base_data()
         if utilities.check_cli_args() is None:
             if launch_gui is True:
+                utilities.disable_cls()
                 from gui import gui_main
-                gui_main.wx_python_gui(self.constants)
+                gui_main.wx_python_gui(self.constants).main_menu(None)
             else:
                 self.main_menu()
 
@@ -28,6 +30,10 @@ class OpenCoreLegacyPatcher:
         self.constants.computer = device_probe.Computer.probe()
         self.constants.recovery_status = utilities.check_recovery()
         self.computer = self.constants.computer
+        self.constants.booted_oc_disk = utilities.find_disk_off_uuid(utilities.clean_device_path(self.computer.opencore_path))
+        if self.constants.computer.firmware_vendor:
+            if self.constants.computer.firmware_vendor != "Apple":
+                self.constants.host_is_hackintosh = True
         launcher_script = None
         launcher_binary = sys.executable
         if "python" in launcher_binary:
@@ -37,17 +43,30 @@ class OpenCoreLegacyPatcher:
                 launcher_script = launcher_script.replace("/resources/main.py", "/OpenCore-Patcher-GUI.command")
         self.constants.launcher_binary = launcher_binary
         self.constants.launcher_script = launcher_script
+        self.constants.unpack_thread = threading.Thread(target=reroute_payloads.reroute_payloads(self.constants).setup_tmp_disk_image)
+        self.constants.unpack_thread.start()
+        self.constants.commit_info = commit_info.commit_info(self.constants.launcher_binary).generate_commit_info()
+
         defaults.generate_defaults.probe(self.computer.real_model, True, self.constants)
+
         if utilities.check_cli_args() is not None:
             print("- Detected arguments, switching to CLI mode")
             self.constants.gui_mode = True  # Assumes no user interaction is required
-            self.constants.current_path = Path.cwd()
-            if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-                print("- Rerouting payloads location")
-                self.constants.payload_path = sys._MEIPASS / Path("payloads")
+            ignore_args = ["--auto_patch", "--gui_patch", "--gui_unpatch"]
+            if not any(x in sys.argv for x in ignore_args):
+                self.constants.current_path = Path.cwd()
+                self.constants.cli_mode = True
+                if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+                    print("- Rerouting payloads location")
+                    self.constants.payload_path = sys._MEIPASS / Path("payloads")
+            ignore_args = ignore_args.pop(0)
+            if not any(x in sys.argv for x in ignore_args):
+                while self.constants.unpack_thread.is_alive():
+                    time.sleep(0.1)
             arguments.arguments().parse_arguments(self.constants)
         else:
-            print("- No arguments present, loading TUI")
+            print(f"- No arguments present, loading {'GUI' if self.constants.wxpython_variant is True else 'TUI'} mode")
+
 
     def main_menu(self):
         response = None
@@ -76,7 +95,7 @@ class OpenCoreLegacyPatcher:
             else:
                 in_between = ["This model is supported"]
 
-            menu = utilities.TUIMenu(title, "Please select an option: ", in_between=in_between, auto_number=True, top_level=True)
+            menu = tui_helpers.TUIMenu(title, "Please select an option: ", in_between=in_between, auto_number=True, top_level=True)
 
             options = (
                 [["Build OpenCore", build.BuildOpenCore(self.constants.custom_model or self.constants.computer.real_model, self.constants).build_opencore]]

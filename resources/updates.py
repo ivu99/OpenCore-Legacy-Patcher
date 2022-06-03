@@ -3,7 +3,6 @@
 # Call check_binary_updates() to determine if any updates are available
 # Returns dict with Link and Version of the latest binary update if available
 import requests
-from pathlib import Path
 
 
 class check_binary_updates:
@@ -44,16 +43,10 @@ class check_binary_updates:
         return False
 
     def determine_local_build_type(self):
-        if self.constants.gui_mode is True:
+        if self.constants.wxpython_variant is True:
             return "GUI"
         else:
             return "TUI"
-
-    def determine_local_build_type_offline(self):
-        if (Path(self.constants.payload_path) / f"12-Monterey.zip").exists():
-            return True
-        else:
-            return False
 
     def determine_remote_type(self, remote_name):
         if "TUI" in remote_name:
@@ -62,12 +55,6 @@ class check_binary_updates:
             return "GUI"
         else:
             return "Unknown"
-
-    def determine_remote_offline_type(self, remote_name):
-        if "Offline" in remote_name:
-            return True
-        else:
-            return False
 
     def check_binary_updates(self):
         # print("- Checking for updates...")
@@ -86,11 +73,7 @@ class check_binary_updates:
                 # print("- Remote version is newer")
                 for asset in data_set["assets"]:
                     print(f"- Found asset: {asset['name']}")
-                    if self.determine_remote_type(
-                            asset["name"]) == self.determine_local_build_type(
-                            ) and self.determine_remote_offline_type(
-                                asset["name"]
-                            ) == self.determine_local_build_type_offline():
+                    if self.determine_remote_type(asset["name"]) == self.determine_local_build_type():
                         # print(f"- Found matching asset: {asset['name']}")
                         self.available_binaries.update({
                             asset['name']: {
@@ -102,9 +85,6 @@ class check_binary_updates:
                                 asset["browser_download_url"],
                                 "Type":
                                 self.determine_remote_type(asset["name"]),
-                                "Offline":
-                                self.determine_remote_offline_type(
-                                    asset["name"]),
                                 "Github Link":
                                 f"https://github.com/dortania/OpenCore-Legacy-Patcher/releases/{self.remote_version}"
                             }

@@ -3,16 +3,17 @@ class nvidia_ids:
     # Courteous of envytools as well as Macrumors:
     # https://envytools.readthedocs.io/en/latest/hw/pciid.html
     # https://forums.macrumors.com/threads/2011-imac-graphics-card-upgrade.1596614/
+    # https://pci-ids.ucw.cz/read/PC/10de
     curie_ids = [
-        0x0040,
-        0x00f0,
-        0x0220,
-        0x0140,
-        0x0160,
-        0x0090,
-        0x01d0,
-        0x0390,
-        0x0290,
+        0x0040,  # NV40 [GeForce 6800 Ultra]
+        0x00f0,  # BR02
+        0x0220,  # NV44A
+        0x0140,  # NV43 [GeForce 6600 GT]
+        0x0160,  # NV44 [GeForce 6500]
+        0x0090,  # G70 [GeForce 7800 GTX]
+        0x01d0,  # G72 [GeForce 7350 LE]
+        0x0390,  # G73 [GeForce 7650 GS]
+        0x0290,  # G71 [GeForce 7900 GTX]
     ]
 
     tesla_ids = [
@@ -524,6 +525,187 @@ class nvidia_ids:
     ]
 
 
+    maxwell_ids = [
+        0x1340,	# GM108M [GeForce 830M]
+        0x1341,	# GM108M [GeForce 840M]
+        0x1344,	# GM108M [GeForce 845M]
+        0x1346,	# GM108M [GeForce 930M]
+        0x1347,	# GM108M [GeForce 940M]
+        0x1348,	# GM108M [GeForce 945M / 945A]
+        0x1349,	# GM108M [GeForce 930M]
+        0x134b,	# GM108M [GeForce 940MX]
+        0x134d,	# GM108M [GeForce 940MX]
+        0x134e,	# GM108M [GeForce 930MX]
+        0x134f,	# GM108M [GeForce 920MX]
+        0x137a,	# GM108GLM [Quadro K620M / Quadro M500M]
+        0x137b,	# GM108GLM [Quadro M520 Mobile]
+        0x137d,	# GM108M [GeForce 940A]
+
+        0x1380,	# GM107 [GeForce GTX 750 Ti]
+        0x1381,	# GM107 [GeForce GTX 750]
+        0x1382,	# GM107 [GeForce GTX 745]
+        0x1389,	# GM107GL [GRID M30]
+        0x1390,	# GM107M [GeForce 845M]
+        0x1391,	# GM107M [GeForce GTX 850M]
+        0x1392,	# GM107M [GeForce GTX 860M]
+        0x1393,	# GM107M [GeForce 840M]
+        0x1398,	# GM107M [GeForce 845M]
+        0x1399,	# GM107M [GeForce 945M]
+        0x139a,	# GM107M [GeForce GTX 950M]
+        0x139b,	# GM107M [GeForce GTX 960M]
+        0x139c,	# GM107M [GeForce 940M]
+        0x139d,	# GM107M [GeForce GTX 750 Ti]
+        0x13b0,	# GM107GLM [Quadro M2000M]
+        0x13b1,	# GM107GLM [Quadro M1000M]
+        0x13b2,	# GM107GLM [Quadro M600M]
+        0x13b3,	# GM107GLM [Quadro K2200M]
+        0x13b4,	# GM107GLM [Quadro M620 Mobile]
+        0x13b6,	# GM107GLM [Quadro M1200 Mobile]
+        0x13b9,	# GM107GL [NVS 810]
+        0x13ba,	# GM107GL [Quadro K2200]
+        0x13bb,	# GM107GL [Quadro K620]
+        0x13bc,	# GM107GL [Quadro K1200]
+        0x13bd,	# GM107GL [Tesla M10]
+
+        0x13c0,	# GM204 [GeForce GTX 980]
+        0x13c1,	# GM204
+        0x13c2,	# GM204 [GeForce GTX 970]
+        0x13c3,	# GM204
+        0x13d7,	# GM204M [GeForce GTX 980M]
+        0x13d8,	# GM204M [GeForce GTX 970M]
+        0x13d9,	# GM204M [GeForce GTX 965M]
+        0x13da,	# GM204M [GeForce GTX 980 Mobile]
+        0x13e7,	# GM204GL [GeForce GTX 980 Engineering Sample]
+        0x13f0,	# GM204GL [Quadro M5000]
+        0x13f1,	# GM204GL [Quadro M4000]
+        0x13f2,	# GM204GL [Tesla M60]
+        0x13f3,	# GM204GL [Tesla M6]
+        0x13f8,	# GM204GLM [Quadro M5000M / M5000 SE]
+        0x13f9,	# GM204GLM [Quadro M4000M]
+        0x13fa,	# GM204GLM [Quadro M3000M]
+        0x13fb,	# GM204GLM [Quadro M5500]
+
+        0x1401,	# GM206 [GeForce GTX 960]
+        0x1402,	# GM206 [GeForce GTX 950]
+        0x1404,	# GM206 [GeForce GTX 960 FAKE]
+        0x1406,	# GM206 [GeForce GTX 960 OEM]
+        0x1407,	# GM206 [GeForce GTX 750 v2]
+        0x1427,	# GM206M [GeForce GTX 965M]
+        0x1430,	# GM206GL [Quadro M2000]
+        0x1431,	# GM206GL [Tesla M4]
+        0x1436,	# GM206GLM [Quadro M2200 Mobile]
+    ]
+
+    pascal_ids = [
+        0x15f0,	# GP100GL [Quadro GP100]
+        0x15f1,	# GP100GL
+        0x15f7,	# GP100GL [Tesla P100 PCIe 12GB]
+        0x15f8,	# GP100GL [Tesla P100 PCIe 16GB]
+        0x15f9,	# GP100GL [Tesla P100 SXM2 16GB]
+
+        0x1b00,	# GP102 [TITAN X]
+        0x1b01,	# GP102 [GeForce GTX 1080 Ti 10GB]
+        0x1b02,	# GP102 [TITAN Xp]
+        0x1b04,	# GP102
+        0x1b06,	# GP102 [GeForce GTX 1080 Ti]
+        0x1b07,	# GP102 [P102-100]
+        0x1b30,	# GP102GL [Quadro P6000]
+        0x1b38,	# GP102GL [Tesla P40]
+        0x1b39,	# GP102GL [Tesla P10]
+        0x1b70,	# GP102GL
+        0x1b78,	# GP102GL
+
+        0x1b80,	# GP104 [GeForce GTX 1080]
+        0x1b81,	# GP104 [GeForce GTX 1070]
+        0x1b82,	# GP104 [GeForce GTX 1070 Ti]
+        0x1b83,	# GP104 [GeForce GTX 1060 6GB]
+        0x1b84,	# GP104 [GeForce GTX 1060 3GB]
+        0x1b87,	# GP104 [P104-100]
+        0x1ba0,	# GP104M [GeForce GTX 1080 Mobile]
+        0x1ba1,	# GP104M [GeForce GTX 1070 Mobile]
+        0x1ba2,	# GP104M [GeForce GTX 1070 Mobile]
+        0x1ba9,	# GP104M
+        0x1baa,	# GP104M
+        0x1bad,	# GP104 [GeForce GTX 1070 Engineering Sample]
+        0x1bb0,	# GP104GL [Quadro P5000]
+        0x1bb1,	# GP104GL [Quadro P4000]
+        0x1bb3,	# GP104GL [Tesla P4]
+        0x1bb4,	# GP104GL [Tesla P6]
+        0x1bb5,	# GP104GLM [Quadro P5200 Mobile]
+        0x1bb6,	# GP104GLM [Quadro P5000 Mobile]
+        0x1bb7,	# GP104GLM [Quadro P4000 Mobile]
+        0x1bb8,	# GP104GLM [Quadro P3000 Mobile]
+        0x1bb9,	# GP104GLM [Quadro P4200 Mobile]
+        0x1bbb,	# GP104GLM [Quadro P3200 Mobile]
+        0x1bc7,	# GP104 [P104-101]
+        0x1be0,	# GP104BM [GeForce GTX 1080 Mobile]
+        0x1be1,	# GP104BM [GeForce GTX 1070 Mobile]
+
+        0x1c00,	# GP106
+        0x1c01,	# GP106
+        0x1c02,	# GP106 [GeForce GTX 1060 3GB]
+        0x1c03,	# GP106 [GeForce GTX 1060 6GB]
+        0x1c04,	# GP106 [GeForce GTX 1060 5GB]
+        0x1c06,	# GP106 [GeForce GTX 1060 6GB Rev. 2]
+        0x1c07,	# GP106 [P106-100]
+        0x1c09,	# GP106 [P106-090]
+        0x1c20,	# GP106M [GeForce GTX 1060 Mobile]
+        0x1c21,	# GP106M [GeForce GTX 1050 Ti Mobile]
+        0x1c22,	# GP106M [GeForce GTX 1050 Mobile]
+        0x1c23,	# GP106M [GeForce GTX 1060 Mobile Rev. 2]
+        0x1c2d,	# GP106M
+        0x1c30,	# GP106GL [Quadro P2000]
+        0x1c31,	# GP106GL [Quadro P2200]
+        0x1c35,	# GP106M [Quadro P2000 Mobile]
+        0x1c36,	# GP106 [P106M]
+        0x1c60,	# GP106BM [GeForce GTX 1060 Mobile 6GB]
+        0x1c61,	# GP106BM [GeForce GTX 1050 Ti Mobile]
+        0x1c62,	# GP106BM [GeForce GTX 1050 Mobile]
+        0x1c70,	# GP106GL
+
+        0x1c80,
+        0x1c81,	# GP107 [GeForce GTX 1050]
+        0x1c82,	# GP107 [GeForce GTX 1050 Ti]
+        0x1c83,	# GP107 [GeForce GTX 1050 3GB]
+        0x1c8c,	# GP107M [GeForce GTX 1050 Ti Mobile]
+        0x1c8d,	# GP107M [GeForce GTX 1050 Mobile]
+        0x1c8e,	# GP107M
+        0x1c8f,	# GP107M [GeForce GTX 1050 Ti Max-Q]
+        0x1c90,	# GP107M [GeForce MX150]
+        0x1c91,	# GP107M [GeForce GTX 1050 3 GB Max-Q]
+        0x1c92,	# GP107M [GeForce GTX 1050 Mobile]
+        0x1c94,	# GP107M [GeForce MX350]
+        0x1c96,	# GP107M [GeForce MX350]
+        0x1ca7,	# GP107GL
+        0x1ca8,	# GP107GL
+        0x1caa,	# GP107GL
+        0x1cb1,	# GP107GL [Quadro P1000]
+        0x1cb2,	# GP107GL [Quadro P600]
+        0x1cb3,	# GP107GL [Quadro P400]
+        0x1cb6,	# GP107GL [Quadro P620]
+        0x1cba,	# GP107GLM [Quadro P2000 Mobile]
+        0x1cbb,	# GP107GLM [Quadro P1000 Mobile]
+        0x1cbc,	# GP107GLM [Quadro P600 Mobile]
+        0x1cbd,	# GP107GLM [Quadro P620]
+        0x1ccc,	# GP107BM [GeForce GTX 1050 Ti Mobile]
+        0x1ccd,	# GP107BM [GeForce GTX 1050 Mobile]
+        0x1cfa,	# GP107GL [Quadro P2000]
+        0x1cfb,	# GP107GL [Quadro P1000]
+
+        0x1d01,	# GP108 [GeForce GT 1030]
+        0x1d02,	# GP108 [GeForce GT 1010]
+        0x1d10,	# GP108M [GeForce MX150]
+        0x1d11,	# GP108M [GeForce MX230]
+        0x1d12,	# GP108M [GeForce MX150]
+        0x1d13,	# GP108M [GeForce MX250]
+        0x1d16,	# GP108M [GeForce MX330]
+        0x1d33,	# GP108GLM [Quadro P500 Mobile]
+        0x1d34,	# GP108GLM [Quadro P520]
+        0x1d52,	# GP108BM [GeForce MX250]
+        0x1d56,	# GP108BM [GeForce MX330]
+    ]
+
+
 class amd_ids:
 
     gcn_7000_ids = [
@@ -601,7 +783,7 @@ class amd_ids:
         0x67E9,  # Unknown
         # AMDEllesmereGraphicsAccelerator - AMD9500Controller
         0x67C0,  # Pro WX 7100 Mobile
-        0x67C1,  # Unknown  
+        0x67C1,  # Unknown
         0x67C2,  # Pro V7300X / V7350x2
         0x67C4,  # Pro WX 7100
         0x67C7,  # Pro WX 5100
@@ -643,7 +825,7 @@ class amd_ids:
         0x66A0,  # Instinct
         0x66A1,  # Pro VII/Instinct MI50
         0x66A2,  # Unknown
-        0x66A3,  #  Pro Vega II/ Pro Vega II Duo
+        0x66A3,  # Pro Vega II/ Pro Vega II Duo
         0x66A7,  # Unknown
         0x66AF,  # VII
     ]
@@ -670,9 +852,11 @@ class amd_ids:
         0x73A2,  # Pro W6900X
         0x73AB,  # Pro W6800X/Pro W6800X Duo
         0x73BF,  # 6800/6800 XT / 6900 XT
+        0x73A3,  # Pro W6800
         # AMDNavi23GraphicsAccelerator
         0x73E3,  # Pro W6600
         0x73FF,  # 6600/6600 XT/6600M
+        0x73E0,  # Unknown
     ]
 
     r500_ids = [
@@ -683,40 +867,40 @@ class amd_ids:
     ]
 
     terascale_1_ids = [
-        0x9400,
-        0x9401,
-        0x9402,
-        0x9403,
-        0x9581,
-        0x9583,
-        0x9588,
-        0x94C8,
-        0x94C9,
-        0x9500,
-        0x9501,
-        0x9505,
-        0x9507,
-        0x9504,
-        0x9506,
-        0x9598,
-        0x9488,
-        0x9599,
-        0x9591,
-        0x9593,
-        0x9440,
-        0x9442,
-        0x944A,
-        0x945A,
-        0x9490,
-        0x949E,
-        0x9480,
-        0x9540,
-        0x9541,
-        0x954E,
-        0x954F,
-        0x9552,
-        0x9553,
-        0x94A0,
+        0x9400,  # HD 2900 PRO/XT
+        0x9401,  # HD 2900 XT
+        0x9402,  # Unknown
+        0x9403,  # HD 2900 PRO
+        0x9581,  # HD 2600 (mobile)
+        0x9583,  # HD 2600 XT/2700 (mobile)
+        0x9588,  # HD 2600 XT
+        0x94C8,  # HD 2400 XT (mobile)
+        0x94C9,  # HD 2400 (mobile)
+        0x9500,  # HD 3850 X2
+        0x9501,  # HD 3870
+        0x9505,  # HD 3690/3850
+        0x9507,  # HD 3830
+        0x9504,  # HD 3850 (mobile)
+        0x9506,  # HD 3850 X2 (mobile)
+        0x9598,  # HD 3650/3750/4570/4580
+        0x9488,  # HD 4670 (mobile)
+        0x9599,  # HD 3650 AGP
+        0x9591,  # HD 3650 (mobile)
+        0x9593,  # HD 3670 (mobile)
+        0x9440,  # HD 4870
+        0x9442,  # HD 4850
+        0x944A,  # HD 4850 (mobile)
+        0x945A,  # HD 4870 (mobile)
+        0x9490,  # HD 4670
+        0x949E,  # FirePro V5700
+        0x9480,  # HD 4650/5165 (mobile)
+        0x9540,  # HD 4550
+        0x9541,  # Unknown
+        0x954E,  # Unknown
+        0x954F,  # HD 4350/4550
+        0x9552,  # HD 4330/4350/4550 (mobile)
+        0x9553,  # HD 4530/4570/545v (mobile)
+        0x94A0,  # HD 4830
     ]
 
     terascale_2_ids = [
@@ -817,38 +1001,38 @@ class intel_ids:
 
     skylake_ids = [
         # AppleIntelSKLGraphicsFramebuffer IDs
-        0x1916,
-        0x191E,
-        0x1926,
-        0x1927,
-        0x1912,
-        0x1932,
-        0x1902,
-        0x1917,
-        0x193B,
-        0x191B,
+        0x1916,  # HD Graphics 520
+        0x191E,  # HD Graphics 515
+        0x1926,  # Iris Graphics 540
+        0x1927,  # Iris Graphics 550
+        0x1912,  # HD Graphics 530
+        0x1932,  # Iris Pro Graphics 580
+        0x1902,  # HD Graphics 510
+        0x1917,  # Unknown
+        0x193B,  # Iris Pro Graphics 580
+        0x191B,  # HD Graphics 530
     ]
 
     kaby_lake_ids = [
         # AppleIntelKBLGraphicsFramebuffer IDs
-        0x5912,
-        0x5916,
-        0x591B,
-        0x591C,
-        0x591E,
-        0x5926,
-        0x5927,
-        0x5923,
+        0x5912,  # HD Graphics 630
+        0x5916,  # HD Graphics 620
+        0x591B,  # HD Graphics 630
+        0x591C,  # UHD Graphics 615
+        0x591E,  # HD Graphics 615
+        0x5926,  # Iris Plus Graphics 640
+        0x5927,  # Iris Plus Graphics 650
+        0x5923,  # HD Graphics 635
     ]
 
     coffee_lake_ids = [
         # AppleIntelCFLGraphicsFramebuffer IDs
-        0x3E9B,
-        0x3EA5,
-        0x3EA6,
-        0x3E92,
-        0x3E91,
-        0x3E98,
+        0x3E9B,  # UHD Graphics 630
+        0x3EA5,  # Iris Plus Graphics 655
+        0x3EA6,  # Unknown
+        0x3E92,  # UHD Graphics 630
+        0x3E91,  # UHD Graphics 630
+        0x3E98,  # UHD Graphics 630
     ]
 
     comet_lake_ids = [
@@ -859,16 +1043,16 @@ class intel_ids:
 
     ice_lake_ids = [
         # AppleIntelICLLPGraphicsFramebuffer IDs
-        0xFF05,
-        0x8A70,
-        0x8A71,
-        0x8A51,
-        0x8A5C,
-        0x8A5D,
-        0x8A52,
-        0x8A53,
-        0x8A5A,
-        0x8A5B,
+        0xFF05,  # Unknown
+        0x8A70,  # Unknown
+        0x8A71,  # Unknown
+        0x8A51,  # Iris Plus Graphics G7
+        0x8A5C,  # Iris Plus Graphics G4
+        0x8A5D,  # Unknown
+        0x8A52,  # Iris Plus Graphics G7
+        0x8A53,  # Iris Plus Graphics G7
+        0x8A5A,  # Iris Plus Graphics G4
+        0x8A5B,  # Unknown
     ]
 
     AppleIntel8254XEthernet = [
@@ -904,7 +1088,8 @@ class broadcom_ids:
         0x43DC,  # BCM4355
         0x4464,  # BCM4364
         0x4488,  # BCM4377b
-        0x4425,  # Unknown
+        0x4425,  # BCM4378 (M1)
+        0x4433,  # BCM4387 (M1 Pro/Max/Ultra)
     ]
 
     AirPortBrcmNIC = [
