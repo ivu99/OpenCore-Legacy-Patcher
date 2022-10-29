@@ -14,7 +14,7 @@ Once you've installed macOS through OpenCore, you can boot up and go through the
 * Install OpenCore to internal drive
 * Reboot holding Option, and select the internal EFI
 
-And voila! No more USB drive required
+And voila! No more USB drive required.
 
 ## Booting seamlessly without Verbose or OpenCore Picker
 
@@ -29,37 +29,29 @@ Here you can change different patcher settings, however the main interest is:
 * Show Boot Picker (GUI)
 * Set ShowPicker Mode (TUI)
 
-Once you've toggled them both off, build your OpenCore EFI once again and install to your desired drive. Now to show the OpenCore selector, you can simply hold down the "ESC" key while clicking on EFI boot, then you can release the "ESC" key when you see the cursor arrow at the top left.
+Once you've toggled them both off, build your OpenCore EFI once again and install to your desired drive. Now to show the OpenCore selector, you can simply hold down the "ESC" key while clicking on EFI boot, and then you can release the "ESC" key when you see the cursor arrow at the top left.
 
 ## Enabling SIP
 
-For many users, SIP will be enabled by default on build. For Intel HD 4000 users, you may have noticed that SIP is partially disabled. This is to ensure full compatibility with macOS Monterey and allow seamless booting between it and older OSes. However for users who do not plan to boot Monterey, you can re-enable under Patcher Settings.
+For many users, SIP will be lowered by default on build. For Intel HD 4000 users, you may have noticed that SIP is partially disabled. This is to ensure full compatibility with macOS Monterey and allow seamless booting between it and older OSes. However for users who do not plan to boot Monterey, you can re-enable under Patcher Settings.
 
-Note: Machines with non-Metal GPUs cannot enable SIP in Big Sur either due to patched root volume
+Note: Machines running macOS Ventura or systems with non-Metal GPUs cannot enable SIP outright, due to having a patched root volume. Enabling will brick the installation.
 
 | SIP Enabled | SIP Lowered (Root Patching) | SIP Disabled |
 | :--- | :--- | :--- |
 | ![](../images/OCLP-GUI-Settings-SIP-Enabled.png) | ![](../images/OCLP-GUI-Settings-SIP-Root-Patch.png) | ![](../images/OCLP-GUI-Settings-SIP-Disabled.png) |
 
-:::warning 
+:::warning
 
-If you're unsure whether you should enable SIP, leave as-is. Systems where you have already ran the Post Install Root Patching cannot enable SIP without potentially breaking the current install. 
+If you're unsure whether you should enable SIP, leave it as-is. Systems where you have already ran the Post Install Root Patching cannot enable SIP without potentially breaking the current install.
 
 :::
 
 ## Applying Post Install Volume Patches
 
-Post Install Volume Patches, sometimes also called root patches, are patches that have to be installed on disk for some older Macs to gain back functionality.
+Post Install Volume Patches, sometimes also called root patches, are patches that have to be installed to disk for some older Macs to gain back functionality.
 
 OCLP v0.4.4 and higher include an autopatcher, which will automatically root patch your system but **only if the USB install media was created within OCLP.**
-
-::: details Note for Mac Pros when swapping a GPU from non-metal to Metal
-
-If you finished installing Monterey with the original card installed (to see bootpicker for example) and swapped your GPU to a Metal supported one, you may notice that you're missing acceleration. To fix this, open OCLP and revert root patches to get your Metal-supported GPU work again.
-
-Alternatively, you can remove "AutoPkg-Assets.pkg" from /Library/Packages on the USB drive before proceeding with the installation. To see the folder, enable hidden files with `Command` + `Shift` + `.` 
-:::
-
 
 Users with OCLP v0.4.4 or higher will also be prompted to install these patches after macOS updates or whenever patches are not detected on the system. We recommend rebuilding OpenCore with the latest version of OCLP to take advantage of these new features.
 
@@ -77,7 +69,7 @@ In OCLP v0.4.5 a new indicator was added to help users to see if, when and on wh
 
 ### Running Post Install patches manually
 
-If you're using OCLP v0.4.3 or earlier, or need to run the patcher manually, you can do so with the app. There is no harm in trying to run the Patcher, as without compatible hardware nothing will be done. You can see below on whether your hardware needs root volume patching. 
+If you're using OCLP v0.4.3 or earlier, or need to run the patcher manually, you can do so with the app. There is no harm in trying to run the Patcher, as without compatible hardware, nothing will be done. You can see below on whether your hardware needs root volume patching or not.
 
 | Listing Patches | Patching Finished |
 | :--- | :--- |
@@ -86,13 +78,22 @@ If you're using OCLP v0.4.3 or earlier, or need to run the patcher manually, you
 
 :::warning
 
-With OpenCore Legacy Patcher versions prior to v0.4.4, Root Patching requires a network connection by default to grab associated resources. If your system is having difficulties with wifi or ethernet, you can grab the newest release :
+With macOS Ventura and Macs with AMD Legacy GCN GPUs (ie. Metal), Root Patching requires a network connection to grab Apple's Kernel Debug Kit to start root patching. If your system is unable to connect to the internet, you can manually download a KDK from Apple's site:
 
-* [OpenCore Legacy Patcher releases](https://github.com/dortania/OpenCore-Legacy-Patcher/releases/latest)
+* [Apple's Developer Download Page](https://developer.apple.com/download/all/?q=Kernel%20Debug%20Kit)
+
+Grab the closet Kernel Debug Kit to the OS you installed, and install it to the machine running Ventura.
+
+Machines that require this are those with AMD Metal dGPUs:
+* 2008 - 2013 Mac Pros (MacPro3,1 - 6,1)
+* 2009 - 2016 iMacs (iMac10,1 - 17,1)
+* 2015 15" MacBook Pro with a dGPU (MacBookPro11,5)
 
 :::
 
-:::details Unsupported GPUs in macOS Big Sur
+Below entires represent GPUs no longer natively supported, ie. requiring root volume patch with OpenCore Legacy Patcher:
+
+:::details GPUs requiring patching in macOS Big Sur
 
 * NVIDIA:
   * Tesla (8000 - 300 series)
@@ -104,7 +105,7 @@ With OpenCore Legacy Patcher versions prior to v0.4.4, Root Patching requires a 
 
 :::
 
-:::details Unsupported GPUs in macOS Monterey
+:::details GPUs requiring patching in macOS Monterey
 
 * NVIDIA:
   * Tesla (8000 - 300 series)
@@ -118,11 +119,26 @@ With OpenCore Legacy Patcher versions prior to v0.4.4, Root Patching requires a 
 
 :::
 
-:::details Unsupported Wireless Cards in macOS Monterey
+:::details Wireless Cards requiring patching in macOS Monterey
 
 * Broadcom:
   * BCM94328
   * BCM94322
 * Atheros
+
+:::
+
+:::details GPUs requiring patching in macOS Ventura
+
+* NVIDIA:
+  * Kepler (600 - 800 series)
+* AMD:
+  * GCN 1-3 (7000 - R9 series)
+  * Polaris (RX 4xx/5xx series, if CPU lacks AVX2)
+* Intel:
+  * Ivy Bridge (4000 series)
+  * Haswell (4400, 4600, 5000 series)
+  * Broadwell (6000 series)
+  * Skylake (500 series)
 
 :::

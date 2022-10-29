@@ -28,18 +28,18 @@ class check_binary_updates:
         return False
 
     def check_if_build_newer(self):
-        if self.remote_version_array[0] > self.binary_version_array[0]:
-            return True
-        elif self.remote_version_array[0] == self.binary_version_array[0]:
-            if self.remote_version_array[1] > self.binary_version_array[1]:
+        # Pad version numbers to match length (ie. 0.1.0 vs 0.1.0.1)
+        while len(self.remote_version_array) > len(self.binary_version_array):
+            self.binary_version_array.append(0)
+        while len(self.remote_version_array) < len(self.binary_version_array):
+            self.remote_version_array.append(0)
+
+        for i in range(0, len(self.remote_version_array)):
+            if int(self.remote_version_array[i]) < int(self.binary_version_array[i]):
+                break
+            elif int(self.remote_version_array[i]) > int(self.binary_version_array[i]):
                 return True
-            elif self.remote_version_array[1] == self.binary_version_array[1]:
-                if self.remote_version_array[2] > self.binary_version_array[2]:
-                    return True
-                else:
-                    return False
-            else:
-                return False
+
         return False
 
     def determine_local_build_type(self):
@@ -62,7 +62,7 @@ class check_binary_updates:
             # print("- Network connection functional")
             response = requests.get(self.binary_url)
             data_set = response.json()
-            # print("- Retrived latest version data")
+            # print("- Retrieved latest version data")
             self.remote_version = data_set["tag_name"]
             # print(f"- Latest version: {self.remote_version}")
             self.remote_version_array = self.remote_version.split(".")

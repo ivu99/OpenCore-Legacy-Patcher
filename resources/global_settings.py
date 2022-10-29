@@ -1,6 +1,6 @@
 # Alternative to Apple's 'defaults' tool
 # Store data in '/Users/Shared'
-# This is to ensure compatibility when running wihout a user
+# This is to ensure compatibility when running without a user
 # ie. during automated patching
 
 from pathlib import Path
@@ -18,18 +18,26 @@ class global_settings:
     def generate_settings_file(self):
         if Path(self.global_settings_plist).exists():
             return
-        plistlib.dump({"Developed by Dortania": True,}, Path(self.global_settings_plist).open("wb"))
+        try:
+            plistlib.dump({"Developed by Dortania": True,}, Path(self.global_settings_plist).open("wb"))
+        except PermissionError:
+            print("- Permission error: Unable to write to global settings file")
 
     def read_property(self, property_name):
-        plist = plistlib.load(Path(self.global_settings_plist).open("rb"))
-        if property_name in plist:
-            return plist[property_name]
+        if Path(self.global_settings_plist).exists():
+            plist = plistlib.load(Path(self.global_settings_plist).open("rb"))
+            if property_name in plist:
+                return plist[property_name]
         return None
 
     def write_property(self, property_name, property_value):
-        plist = plistlib.load(Path(self.global_settings_plist).open("rb"))
-        plist[property_name] = property_value
-        plistlib.dump(plist, Path(self.global_settings_plist).open("wb"))
+        if Path(self.global_settings_plist).exists():
+            plist = plistlib.load(Path(self.global_settings_plist).open("rb"))
+            plist[property_name] = property_value
+            try:
+                plistlib.dump(plist, Path(self.global_settings_plist).open("wb"))
+            except PermissionError:
+                print("- Failed to write to global settings file")
 
 
     def convert_defaults_to_global_settings(self):
@@ -41,7 +49,14 @@ class global_settings:
             # merge defaults with global settings
             global_settings_plist = plistlib.load(Path(self.global_settings_plist).open("rb"))
             global_settings_plist.update(defaults_plist)
-            plistlib.dump(global_settings_plist, Path(self.global_settings_plist).open("wb"))
+            try:
+                plistlib.dump(global_settings_plist, Path(self.global_settings_plist).open("wb"))
+            except PermissionError:
+                print("- Permission error: Unable to write to global settings file")
+                return
 
             # delete defaults plist
-            Path(defaults_path).unlink()
+            try:
+                Path(defaults_path).unlink()
+            except PermissionError:
+                print("- Permission error: Unable to delete defaults plist")

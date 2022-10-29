@@ -3,6 +3,7 @@ from pathlib import Path
 import plistlib
 import subprocess
 import requests
+import tempfile
 from resources import utilities, tui_helpers
 
 def list_local_macOS_installers():
@@ -46,6 +47,14 @@ def list_local_macOS_installers():
                             can_add = False
                     else:
                         can_add = True
+
+                    # Check SharedSupport.dmg's data
+                    results = parse_sharedsupport_version(Path("/Applications") / Path(application)/ Path("Contents/SharedSupport/SharedSupport.dmg"))
+                    if results[0] is not None:
+                        app_sdk = results[0]
+                    if results[1] is not None:
+                        app_version = results[1]
+
                     if can_add is True:
                         application_list.update({
                             application: {
@@ -62,6 +71,46 @@ def list_local_macOS_installers():
     # Sort Applications by version
     application_list = {k: v for k, v in sorted(application_list.items(), key=lambda item: item[1]["Version"])}
     return application_list
+
+def parse_sharedsupport_version(sharedsupport_path):
+    detected_build =     None
+    detected_os =        None
+    sharedsupport_path = Path(sharedsupport_path)
+
+    if not sharedsupport_path.exists():
+        return (detected_build, detected_os)
+
+    if not sharedsupport_path.name.endswith(".dmg"):
+        return (detected_build, detected_os)
+
+
+    # Create temporary directory to extract SharedSupport.dmg to
+    with tempfile.TemporaryDirectory() as tmpdir:
+        output = subprocess.run(
+            [
+                "hdiutil", "attach", "-noverify", sharedsupport_path,
+                "-mountpoint", tmpdir,
+                "-nobrowse",
+            ],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
+        if output.returncode != 0:
+            return (detected_build, detected_os)
+
+        ss_info = Path("SFR/com_apple_MobileAsset_SFRSoftwareUpdate/com_apple_MobileAsset_SFRSoftwareUpdate.xml")
+
+        if Path(tmpdir / ss_info).exists():
+            plist = plistlib.load((tmpdir / ss_info).open("rb"))
+            if "Build" in plist["Assets"][0]:
+                detected_build = plist["Assets"][0]["Build"]
+            if "OSVersion" in plist["Assets"][0]:
+                detected_os = plist["Assets"][0]["OSVersion"]
+
+        # Unmount SharedSupport.dmg
+        output = subprocess.run(["hdiutil", "detach", tmpdir], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    return (detected_build, detected_os)
+
 
 def create_installer(installer_path, volume_name):
     # Creates a macOS installer
@@ -110,15 +159,15 @@ def install_macOS_installer(download_path):
 def list_downloadable_macOS_installers(download_path, catalog):
     available_apps = {}
     if catalog == "DeveloperSeed":
-        link = "https://swscan.apple.com/content/catalogs/others/index-12seed-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
+        link = "https://swscan.apple.com/content/catalogs/others/index-13seed-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
     elif catalog == "PublicSeed":
-        link = "https://swscan.apple.com/content/catalogs/others/index-12beta-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
+        link = "https://swscan.apple.com/content/catalogs/others/index-13beta-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
     else:
-        link = "https://swscan.apple.com/content/catalogs/others/index-12customerseed-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
+        link = "https://swscan.apple.com/content/catalogs/others/index-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
 
     if utilities.verify_network_connection(link) is True:
         try:
-            catalog_plist = plistlib.loads(requests.get(link).content)
+            catalog_plist = plistlib.loads(utilities.SESSION.get(link).content)
         except plistlib.InvalidFileException:
             return available_apps
 
@@ -132,8 +181,11 @@ def list_downloadable_macOS_installers(download_path, catalog):
                 for bm_package in catalog_plist["Products"][item]["Packages"]:
                     if "Info.plist" in bm_package["URL"] and "InstallInfo.plist" not in bm_package["URL"]:
                         try:
-                            build_plist = plistlib.loads(requests.get(bm_package["URL"]).content)
+                            build_plist = plistlib.loads(utilities.SESSION.get(bm_package["URL"]).content)
                         except plistlib.InvalidFileException:
+                            continue
+                        # Ensure Apple Silicon specific Installers are not listed
+                        if "VMM-x86_64" not in build_plist["MobileAssetProperties"]["SupportedDeviceModels"]:
                             continue
                         version = build_plist["MobileAssetProperties"]["OSVersion"]
                         build = build_plist["MobileAssetProperties"]["Build"]
@@ -146,10 +198,10 @@ def list_downloadable_macOS_installers(download_path, catalog):
                             elif "seed" in catalog_url:
                                 catalog_url = "DeveloperSeed"
                             else:
-                                catalog_url = "Unknown"
+                                catalog_url = "Public"
                         except KeyError:
-                            # Assume CustomerSeed if no catalog URL is found
-                            catalog_url = "CustomerSeed"
+                            # Assume Public if no catalog URL is found
+                            catalog_url = "Public"
                         for ia_package in catalog_plist["Products"][item]["Packages"]:
                             if "InstallAssistant.pkg" in ia_package["URL"]:
                                 download_link = ia_package["URL"]
@@ -178,16 +230,17 @@ def only_list_newest_installers(available_apps):
     # This is used to avoid overwhelming the user with installer options
 
     # Only strip OSes that we know are supported
-    supported_versions = ["10.13", "10.14", "10.15", "11", "12"]
+    supported_versions = ["10.13", "10.14", "10.15", "11", "12", "13"]
 
     for version in supported_versions:
         remote_version_minor = 0
         remote_version_security = 0
+        os_builds = []
 
         # First determine the largest version
         for ia in available_apps:
             if available_apps[ia]["Version"].startswith(version):
-                if available_apps[ia]["Variant"] not in ["DeveloperSeed", "PublicSeed"]:
+                if available_apps[ia]["Variant"] not in ["CustomerSeed", "DeveloperSeed", "PublicSeed"]:
                     remote_version = available_apps[ia]["Version"].split(".")
                     if remote_version[0] == "10":
                         remote_version.pop(0)
@@ -203,6 +256,10 @@ def only_list_newest_installers(available_apps):
 
         # Now remove all versions that are not the largest
         for ia in list(available_apps):
+            # Don't use Beta builds to determine latest version
+            if available_apps[ia]["Variant"] in ["CustomerSeed", "DeveloperSeed", "PublicSeed"]:
+                continue
+
             if available_apps[ia]["Version"].startswith(version):
                 remote_version = available_apps[ia]["Version"].split(".")
                 if remote_version[0] == "10":
@@ -212,13 +269,34 @@ def only_list_newest_installers(available_apps):
                     remote_version.pop(0)
                 if int(remote_version[0]) < remote_version_minor:
                     available_apps.pop(ia)
-                elif int(remote_version[0]) == remote_version_minor:
+                    continue
+                if int(remote_version[0]) == remote_version_minor:
                     if len(remote_version) > 1:
                         if int(remote_version[1]) < remote_version_security:
                             available_apps.pop(ia)
+                            continue
                     else:
                         if remote_version_security > 0:
                             available_apps.pop(ia)
+                            continue
+
+                # Remove duplicate builds
+                #   ex.  macOS 12.5.1 has 2 builds in the Software Update Catalog
+                #   ref: https://twitter.com/classicii_mrmac/status/1560357471654379522
+                if available_apps[ia]["Build"] in os_builds:
+                    available_apps.pop(ia)
+                    continue
+
+                os_builds.append(available_apps[ia]["Build"])
+
+    # Final passthrough
+    # Remove Betas if there's a non-beta version available
+    for ia in list(available_apps):
+        if available_apps[ia]["Variant"] in ["CustomerSeed", "DeveloperSeed", "PublicSeed"]:
+            for ia2 in available_apps:
+                if available_apps[ia2]["Version"].split(".")[0] == available_apps[ia]["Version"].split(".")[0] and available_apps[ia2]["Variant"] not in ["CustomerSeed", "DeveloperSeed", "PublicSeed"]:
+                    available_apps.pop(ia)
+                    break
 
     return available_apps
 
@@ -328,16 +406,55 @@ def list_disk_to_format():
         })
     return list_disks
 
+# Create global tmp directory
+tmp_dir = tempfile.TemporaryDirectory()
 
-def generate_installer_creation_script(script_location, installer_path, disk):
+def generate_installer_creation_script(tmp_location, installer_path, disk):
     # Creates installer.sh to be piped to OCLP-Helper and run as admin
     # Goals:
     # - Format provided disk as HFS+ GPT
     # - Run createinstallmedia on provided disk
-    # Implemnting this into a single installer.sh script allows us to only call
+    # Implementing this into a single installer.sh script allows us to only call
     # OCLP-Helper once to avoid nagging the user about permissions
 
     additional_args = ""
+    script_location = Path(tmp_location) / Path("Installer.sh")
+
+    # Due to a bug in createinstallmedia, running from '/Applications' may sometimes error:
+    #   'Failed to extract AssetData/boot/Firmware/Manifests/InstallerBoot/*'
+    # This affects native Macs as well even when manually invoking createinstallmedia
+
+    # To resolve, we'll copy into our temp directory and run from there
+
+    # Create a new tmp directory
+    # Our current one is a disk image, thus CoW will not work
+    global tmp_dir
+    ia_tmp = tmp_dir.name
+
+    print(f"Creating temporary directory at {ia_tmp}")
+    # Delete all files in tmp_dir
+    for file in Path(ia_tmp).glob("*"):
+        subprocess.run(["rm", "-rf", str(file)])
+
+    # Copy installer to tmp (use CoW to avoid extra disk writes)
+    args = ["cp", "-cR", installer_path, ia_tmp]
+    if utilities.check_filesystem_type() != "apfs":
+        # HFS+ disks do not support CoW
+        args[1] = "-R"
+        # Ensure we have enough space for the duplication
+        space_available = utilities.get_free_space()
+        space_needed = Path(ia_tmp).stat().st_size
+        if space_available < space_needed:
+            print("Not enough free space to create installer.sh")
+            print(f"{utilities.human_fmt(space_available)} available, {utilities.human_fmt(space_needed)} required")
+            return False
+    subprocess.run(args)
+
+    # Adjust installer_path to point to the copied installer
+    installer_path = Path(ia_tmp) / Path(Path(installer_path).name)
+    if not Path(installer_path).exists():
+        print(f"Failed to copy installer to {ia_tmp}")
+        return False
 
     createinstallmedia_path = str(Path(installer_path) / Path("Contents/Resources/createinstallmedia"))
     plist_path = str(Path(installer_path) / Path("Contents/Info.plist"))

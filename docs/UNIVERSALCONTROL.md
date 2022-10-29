@@ -1,8 +1,8 @@
 # Universal Control on unsupported Macs
 
-Introduced in macOS 12 Monterey, Universal Control is a feature that allows a Mac to control other Macs and/or iPads, share input devices, and share files across them simultaneously. With OpenCore and FeatureUnlock, Universal Control can be unlocked for most unsupported Macs, so long as they meet the technical requirements.
+Introduced in macOS 12 Monterey, Universal Control is a feature that allows a Mac to control other Macs and/or iPads, share input devices, and share files across them simultaneously. With OpenCore and FeatureUnlock, Universal Control can be unlocked for most unsupported Macs, as long as they meet the technical requirements listed on this page.
 
-* Note: Following page is primarily for hobbiests, no proper support is provided outside of Discord support (see bottom of page)
+* Note: The following page is primarily for tinkerers, no proper support is provided outside of Discord support (see bottom of page).
 
 ## Enabling Universal Control
 
@@ -14,7 +14,7 @@ If you meet all the requirements, in most cases you can go to Display Preference
 | ![](../images/UC-enable-1.png) | ![OCLP GUI Build Finished](../images/UC-enable-2.png) |
 
 
-Most Macs 2011 and above should work out of the box. However, older Macs like 2008-2011 MacBook Pro's require upgrading to a newer Wi-Fi/Bluetooth card. More info in the [requirements section.](#requirements-for-universal-control)
+Most Mac models from 2011 and above should work out of the box. However, older Macs like the 2008-2011 MacBook Pros require upgrading the Wi-Fi/Bluetooth card to a newer model. More info in the [requirements section.](#requirements-for-universal-control)
 
 Some Monterey-native models are blacklisted, check the [blacklisted models section](#blacklisted-models) for more info.
 
@@ -28,33 +28,34 @@ Technical requirements:
 * iPadOS 15.4 or newer (if applicable)
 * OpenCore Legacy Patcher 0.4.3 or newer
 
-Check the [table of models](#table-of-models) below whether you need to upgrade hardware and exactly what hardware is required to be changed based on the offending Macs. Refer for help on how to upgrade the Wi-Fi card on older 2008-2011 models on the Discord channel [#hardware](https://discord.gg/rqdPgH8xSN) if required.
+Check the [table of models](#table-of-models) below to see whether you need to upgrade hardware and exactly what hardware is required to be changed based on the offending Macs listed. For help on how to upgrade the Wi-Fi card in older 2008-2011 models, refer to the Discord channel [#hardware](https://discord.gg/rqdPgH8xSN) if required.
 
 
 
 Other requirements:
 
-* All devices signed into the same iCloud account.
-* Two Factor Authentication enabled with your Apple ID.
-* Bluetooth and WiFi enabled, neither needs to be connected so long as they are enabled.
+* All devices are signed into the same iCloud account.
+* Two Factor Authentication is enabled with your Apple ID.
+* Bluetooth and WiFi are enabled. Neither needs to be connected, leaving them enabled is sufficient.
 * Handoff turned on from iCloud settings.
-* The devices in question to be in close proximity.
+* The devices in question are in close proximity.
 
 
 ### Table of models
 
-This table shows which models do and don't support Universal Control out of box (OOB) and what is required to gain support.
+This table shows which models do and do not support Universal Control out of box (OOB) and what is required to gain support.
+Note: For AirPort upgrades, only the best/newest cards are listed.
 
 ::: details MacBook
 
 |   SMBIOS   | WiFi/BT version | UC OOB  | Comment |
 |------------|-----------------|------------|---------|
-| MacBook4,1 | Wi-Fi 4 / BT 2.0 EDR |  <span style="color:red"> NO </span> | Use the Mac Pro Wi-Fi upgrade kit to upgrade to BCM94360 |
-| MacBook5,1 | ^^ |  ^^ | ^^ |
-| MacBook5,2 | WiFi 4 / BT 2.1 EDR  | ^^ | ^^ |
-| MacBook6,1 | ^^ | ^^ | Upgrade to BCM94360 |
+| MacBook4,1 | Wi-Fi 4 / BT 2.0 EDR |  <span style="color:red"> NO </span> | Replace stock AirPort card with an mPCIE + USB Connector Adapter board with a BCM94360CS2 card  |
+| MacBook5,1 | ^^ |  ^^ | <span style="color:red"> Use a Broadcom USB Bluetooth 4.0+ Dongle </span> |
+| MacBook5,2 | WiFi 4 / BT 2.1 EDR  | ^^ | Replace stock AirPort card with an mPCIE + USB Connector Adapter board with a BCM94360CS2 card  |
+| MacBook6,1 | ^^ | ^^ | Replace stock AirPort card with a BCM94331PCIEBT4CAX/BCM94331PCIEBT4 card |
 | MacBook7,1 | ^^ | ^^ | ^^ |
-| MacBook8,1 | WiFi 5 + BT 4.0 | <span style="color:#30BCD5"> YES </span> | Universal Control will work. |
+| MacBook8,1 | WiFi 4 + BT 4.2 | <span style="color:#30BCD5"> YES </span> | Universal Control will work. |
 
 :::
 
@@ -62,8 +63,8 @@ This table shows which models do and don't support Universal Control out of box 
 
 | SMBIOS | WiFi/BT version | UC OOB  | Comment |
 |--------|-----------------|------------|---------|
-| MacBookAir2,1 | Wi-Fi 4 / BT 2.1 EDR | <span style="color:red"> NO </span> | Replace the card with BCM94360 and disconnect/disable the BT module. |
-| MacBookAir3,1 | ^^ | ^^ | ^^ |
+| MacBookAir2,1 | Wi-Fi 4 / BT 2.1 EDR | <span style="color:red"> NO </span> | Use a Broadcom USB Bluetooth 4.0+ Dongle |
+| MacBookAir3,1 | ^^ | ^^ | Replace stock AirPort card with a BCM94360CS2 card |
 | MacBookAir3,2 | ^^ | ^^ | ^^ |
 | MacBookAir4,1 | Wi-Fi 4 +  BT 4.0 | <span style="color:#30BCD5"> YES </span> | Universal Control will work. |
 | MacBookAir4,2 | ^^ | ^^ | ^^ |
@@ -81,16 +82,16 @@ This table shows which models do and don't support Universal Control out of box 
 
 | SMBIOS | WiFi/BT version | UC OOB   | Comment |
 |--------|-----------------|-------------|---------|
-| MacBookPro4,1 | Wi-Fi 4   /   BT 2.1 EDR | <span style="color:red"> NO </span> | Use the Mac Pro Wi-Fi upgrade kit to upgrade to BCM94360 |
-| MacBookPro5,1 | ^^ | ^^ | Upgrading to BCM94331 requires some heavy case hardware modifications, so instead use a USB BT 4.0 dongle |
+| MacBookPro4,1 | Wi-Fi 4   /   BT 2.1 EDR | <span style="color:red"> NO </span> | Replace stock AirPort card with an mPCIE + USB Connector Adapter board with a BCM94360CS2 card |
+| MacBookPro5,1 | ^^ | ^^ | Use a Broadcom USB Bluetooth 4.0+ Dongle |
 | MacBookPro5,2 | ^^ | ^^ | ^^ |
 | MacBookPro5,3 | ^^ | ^^ | ^^ |
 | MacBookPro5,4 | ^^ | ^^ | ^^ |
 | MacBookPro5,5 | ^^ | ^^ | ^^ |
 | MacBookPro6,1 | ^^ | ^^ | ^^ |
-| MacBookPro6,2 | ^^ | ^^ | ^^ |
-| MacBookPro7,1 | ^^ | ^^ | ^^ |
-| MacBookPro8,1 | Wi-Fi 4 + BT 2.1 EDR | ^^ | Upgrade to BCM94331 |
+| MacBookPro6,2 | ^^ | ^^ | Replace stock AirPort card with a BCM94331PCIEBT4CAX/BCM94331PCIEBT4 card |
+| MacBookPro7,1 | ^^ | ^^ | Use a Broadcom USB Bluetooth 4.0+ Dongle |
+| MacBookPro8,1 | Wi-Fi 4 + BT 2.1 EDR | ^^ | Replace stock AirPort card with a BCM94331PCIEBT4CAX/BCM94331PCIEBT4 card |
 | MacBookPro8,2 | ^^ | ^^ | ^^ |
 | MacBookPro9,1 | Wi-Fi 4 + BT 4.0 | <span style="color:#30BCD5"> YES </span> | Universal Control will work. |
 | MacBookPro9,2 | ^^ | ^^ | ^^ |
@@ -108,8 +109,8 @@ This table shows which models do and don't support Universal Control out of box 
 
 | SMBIOS | WiFi/BT version | UC OOB | Comment |
 |--------|-----------------|------------|---------|
-| Macmini3,1 | Wi-Fi 4 + BT 2.1 EDR  |  <span style="color:red"> NO </span>  | Upgrade requires some heavy electrical and case modifications, so instead used a USB BT 4.0 dongle. |
-| Macmini4,1 | ^^ |  ^^ | Upgrade to BCM94360. |
+| Macmini3,1 | Wi-Fi 4 + BT 2.1 EDR  |  <span style="color:red"> NO </span>  | Upgrade requires some heavy electrical and case modifications, so instead used a Broadcom USB Bluetooth 4.0+ Dongle. |
+| Macmini4,1 | ^^ |  ^^ | ^^ |
 | Macmini5,1 | Wi-Fi 4 + BT 4.0 | <span style="color:#30BCD5"> YES </span> | Universal Control will work. |
 | Macmini5,2 | ^^ | ^^ | ^^ |
 | Macmini5,3 | ^^ | ^^ | ^^ |
@@ -117,21 +118,21 @@ This table shows which models do and don't support Universal Control out of box 
 | Macmini6,2 | ^^ | ^^ | ^^ |
 | Macmini7,1 | Wi-Fi 5 + BT 4.0 | <span style="color:red"> NO </span> | Hardware supports UC. <br> [**Spoofing required.**](#blacklisted-models) |
 
-::: 
+:::
 
 
 :::details iMac
 
 |  SMBIOS  | WiFi/BT version | UC OOB | Comment |
 |----------|-----------------|------------|---------|
-| iMac7,1  | Wi-Fi 4 + BT 2.0 EDR  | <span style="color:red"> NO </span> | Use the Mac Pro Wi-Fi upgrade kit to upgrade to BCM94360 (soldering required for BT)
+| iMac7,1  | Wi-Fi 4 + BT 2.0 EDR  | <span style="color:red"> NO </span> | Replace stock AirPort card with an mPCIE + USB Connector Adapter board with a BCM94360CD card
 | iMac8,1  | ^^ | ^^ | ^^ |
 | iMac9,1  | Wi-Fi 4 / BT 2.1 EDR  | ^^ | ^^ |
 | iMac10,1 | ^^ | ^^ | ^^ |
 | iMac11,1 | ^^ | ^^ | ^^ |
 | iMac11,2 | ^^ | ^^ | ^^ |
 | iMac11,3 | ^^ | ^^ | ^^ |
-| iMac12,1 | ^^ | ^^ | ^^ |
+| iMac12,1 | ^^ | ^^ | Replace stock AirPort card with an mPCIE + USB Connector Adapter board with a BCM943602CD card
 | iMac12,2 | ^^ | ^^ | ^^ |
 | iMac13,1 | Wi-Fi 4 + BT 4.0 | <span style="color:#30BCD5"> YES </span> | Universal Control will work. |
 | iMac13,2 | ^^ | ^^ | ^^ |
@@ -144,21 +145,32 @@ This table shows which models do and don't support Universal Control out of box 
 | iMac16,1 | Wi-Fi 5 + BT 4.2 | <span style="color:red"> NO </span> | Hardware supports UC. <br> [**Spoofing required.**](#blacklisted-models) |
 | iMac16,2 | ^^ | ^^ | ^^ |
 
-::: 
+:::
 
 :::details Mac Pro
 
 | SMBIOS    | WiFi/BT version | UC OOB  | Comment |
 |-----------|-----------------|---------|---------|
-| MacPro3,1 | Wi-Fi 4 + BT 2.0 EDR | <span style="color:red"> NO </span> | Use the Mac Pro Wi-Fi upgrade kit to upgrade to BCM94360. |
-| MacPro4,1 | Wi-Fi 4 + BT 2.1 EDR | ^^ | Use the Mac Pro Wi-Fi upgrade kit to upgrade to BCM94360 (soldering required for BT) |
+| MacPro3,1 | Wi-Fi 4 + BT 2.0 EDR | <span style="color:red"> NO </span> | Replace stock AirPort card with an mPCIE Adapter board with a BCM943602CD card |
+| MacPro4,1 | Wi-Fi 4 + BT 2.1 EDR | ^^ | Replace stock AirPort card with an mPCIE + USB Connector Adapter board with a BCM943602CD card |
 | MacPro5,1 | ^^ | ^^ | ^^ |
 | MacPro6,1 | Wi-Fi 5 + BT 4.0 | ^^ | Hardware supports UC. <br> [**Spoofing required.**](#blacklisted-models) |
 
 * Note: Some older Mac Pro configurations may not have shipped with a WiFi card in the base model
 
 
-::: 
+:::
+
+
+:::details Xserve ;p
+
+| SMBIOS    | WiFi/BT version | UC OOB  | Comment |
+|-----------|-----------------|---------|---------|
+| Xserve2,1 | N/A | <span style="color:red"> NO </span> | Install a PCIe BCM943602CD card |
+| Xserve3,1 | ^^ | ^^ | ^^ |
+
+:::
+
 ## Blacklisted models
 
 The following models are blacklisted from using Universal Control by Apple:
@@ -171,9 +183,9 @@ The following models are blacklisted from using Universal Control by Apple:
 - Macmini7,x - Mac mini 2014
 - MacPro6,x - Mac Pro Late 2013
 
-The hardware in these models is capable but due to blacklisting, the only solution to use Universal Control on the models above is to spoof their SMBIOS. SMBIOS spoofing essentially fools some aspects of macOS to think they are running on a different machine. 
+The hardware in these models are capable of supporting Universal Control, but due to blacklisting, the only solution to use Universal Control on these models is to spoof their SMBIOS. SMBIOS spoofing essentially fools some aspects of macOS to think they are running on a different machine. 
 
-With SMBIOS Spoofing, the Universal Control handshake recognizes a different SMBIOS and thus grants a blacklisted Mac to connect to other iPads and Macs with Universal Control.
+With SMBIOS Spoofing, the Universal Control handshake recognizes a different SMBIOS and thus grants a blacklisted Mac to connect to other Macs and iPads with Universal Control.
 
 | Situation | Condition | Solution |
 |-----------|-----------|---------|
@@ -184,7 +196,7 @@ With SMBIOS Spoofing, the Universal Control handshake recognizes a different SMB
 
 :::warning
 
-Before we continue, please keep in mind SMBIOS Spoofing is an advanced feature of OpenCore, that with reckless usage of it, could potentially screw things around and leave your installation non-working. Once you boot into a spoofed state, it is highly recommended you stay spoofed, and avoid booting macOS without OpenCore.
+Before we continue, please keep in mind that SMBIOS Spoofing is an advanced feature of OpenCore. Reckless usage of it could potentially break important functionality and leave your installation in a non-working state. Once you boot into a spoofed state, it is highly recommended that you stay spoofed, and avoid booting macOS without OpenCore.
 
 :::
 
@@ -192,9 +204,9 @@ Before we continue, please keep in mind SMBIOS Spoofing is an advanced feature o
 
 Firstly, run the GUI version of OpenCore Legacy Patcher, go to **Settings** and tick **Allow native models**.
 
-**Note:** Unless you are building OpenCore on a different machine than it's targeted for, **do not** change the model in this main settings view. It is important to understand that OCLP targets this model regardless of what you may have spoofed to, as your Mac is still what the Native SMBIOS shows.
+**Note:** Unless you are building OpenCore on a different machine than it's targeted for, **do not** change the model in the main settings view. It is important to understand that OCLP targets this model regardless of what you may have spoofed to, as your Mac is still what the Native SMBIOS shows.
 
-Secondly, go to **SMBIOS Settings**, tick **Allow Native Spoofs**, set SMBIOS Spoof Level to **Moderate**. Set SMBIOS Spoof Model to **one next to your native model in the table for spoofed models below.**
+Secondly, go to **SMBIOS Settings**, tick **Allow Native Spoofs**, set SMBIOS Spoof Level to **Moderate**. Set SMBIOS Spoof Model to **one listed next to your native model in the table for spoofed models below.**
 
 
 ::: details Table for spoofed models (click to expand)
@@ -208,8 +220,8 @@ Any model after the list of officially blacklisted Macs should be supported, but
 |-------------|---------------|--------------|--------|-----------|
 | MacBook Air Early 2015 11" / 13" | MacBookAir7,x | MacBookAir8,1 | <span style="color:#30BCD5"> YES </span> | Hzlph |
 | MacBook Pro Early 2015 13" | MacBookPro12,x | MacBookPro13,1 | ^^ | ^^ |
-| MacBook Pro Mid 2015 15" | MacBookPro11,4 / 11,5 | MacBookPro13,3 | ^^ | ^^ 
-| iMac Late 2015 21" | iMac16,x | iMac18,2 | ^^ | ^^ 
+| MacBook Pro Mid 2015 15" | MacBookPro11,4 / 11,5 | MacBookPro13,3 | ^^ | ^^
+| iMac Late 2015 21" | iMac16,x | iMac18,2 | ^^ | ^^
 | Mac mini Late 2014  | Macmini7,x | MacMini8,1 | <span style="color:red"> NO </span> | N/A |
 | Mac Pro Late 2013 | MacPro6,x | MacPro7,1 | <span style="color:#30BCD5"> YES </span> | Crystall1nedev |
 
@@ -220,8 +232,8 @@ Any model after the list of officially blacklisted Macs should be supported, but
 | ![](../images/OCLP-allow-native-models.png) | ![](../images/OCLP-smbios-settings.png) |
 
 
-Build and install OpenCore again, reboot back to the OS. Enable Universal Control as explained in [Enabling Universal Control section.](#enabling-universal-control)
+Build and install OpenCore again, and reboot back to the OS. Enable Universal Control as explained in the [Enabling Universal Control section.](#enabling-universal-control)
 
 
 
-You should now be prompted to log back into iCloud by your Mac. This means you were successful, otherwise, verify you are correctly following the steps listed above, or else ask on the Discord group for assistance on [#misc-help](https://discord.gg/rqdPgH8xSN).
+You should now be prompted to log back into iCloud by your Mac. If you get this prompt, you have successfully configured SMBIOS spoofing. Otherwise, verify that you have correctly followed the steps listed above, or ask on the Discord server for further assistance in [#misc-help](https://discord.gg/rqdPgH8xSN).

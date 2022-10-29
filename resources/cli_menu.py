@@ -171,9 +171,9 @@ Note: For security reasons, OpenShell will be disabled when Vault is set.
         utilities.cls()
         utilities.header(["Set System Integrity protection"])
         print(
-            f"""SIP is used to ensure proper secuirty measures are set,
+            f"""SIP is used to ensure proper security measures are set,
 however to patch the root volume this must be lowered partially.
-Only disable is absolutely necessary. SIP value = 0x802
+Only disable is absolutely necessary. SIP value = 0x803
 
 Valid options:
 
@@ -222,24 +222,6 @@ Q. Return to previous menu
         else:
             self.change_sbm()
 
-    def set_amfi(self):
-        utilities.cls()
-        utilities.header(["Set AMFI"])
-        print(
-            """Required for Root Patching non-Metal GPUs
-in macOS Big Sur. Without this, will receive kernel panic once
-Patcher finishes installing legacy acceleration patches.
-        """
-        )
-        change_menu = input("Disable AMFI(y/n/q): ")
-        if change_menu in {"y", "Y", "yes", "Yes"}:
-            self.constants.amfi_status = False
-        elif change_menu in {"n", "N", "no", "No"}:
-            self.constants.amfi_status = True
-        elif change_menu in {"q", "Q", "Quit", "quit"}:
-            print("Returning to previous menu")
-        else:
-            self.set_amfi()
 
     def bootstrap_setting(self):
         utilities.cls()
@@ -553,7 +535,7 @@ be prepared if enabling.
 Some 2013-14 MacBook Pro's have issues with the built-in thunderbolt,
 resulting in kernel panics and random shutdowns.
 
-To alliviate, you can disable the thunderbolt controller on MacBookPro11,x
+To alleviate, you can disable the thunderbolt controller on MacBookPro11,x
 machines with this option.
 
 Note: This option only works on MacBookPro11,x, file an issue if you know of
@@ -650,7 +632,7 @@ for Windows may prefer to only work with the dGPU and eGPU active.
         else:
             self.dGPU_switch_support()
 
-    def set_3rd_party_drices(self):
+    def set_3rd_party_drives(self):
         utilities.cls()
         utilities.header(["Set enhanced 3rd Party SSD Support"])
         print(
@@ -671,7 +653,7 @@ TRIM is not ideal.
         elif change_menu in {"q", "Q", "Quit", "quit"}:
             print("Returning to previous menu")
         else:
-            self.set_3rd_party_drices()
+            self.set_3rd_party_drives()
 
     def set_software_demux(self):
         utilities.cls()
@@ -795,7 +777,7 @@ Flipping this setting will disable automatic loading of additional drives in
 OpenCore's boot menu other than what was booted.
 
 Note: This option should only be flipped under the following circumstances:
-      - You are experincing wake failures from hibernation
+      - You are experiencing wake failures from hibernation
       - You are only using 1 disk in your system for booting (ie. no RAID)
       - OpenCore is installed on the same disk as the OS
       - Your system has an Intel iGPU and Nvidia dGPU
@@ -819,7 +801,7 @@ Note: This option should only be flipped under the following circumstances:
         print(
             """
 By default OCLP will use the SIP value of 0x00 as the enabled and
-0xA03 for machines that require root patching. For users who wish
+0x803 for machines that require root patching. For users who wish
 to flip additional bits in SIP may use this option.
 
 To disable SIP outright, set it to 0xFEF
@@ -857,7 +839,7 @@ Supported Options:
 3. Disable FeatureUnlock
             """
         )
-        change_menu = input("Set FeatreUnlock (ie. 1): ")
+        change_menu = input("Set FeatureUnlock (ie. 1): ")
         if change_menu == "1":
             self.constants.fu_status = True
             self.constants.fu_arguments = None
@@ -983,7 +965,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
                 print("\n".join(model_array.SupportedSMBIOS))
                 input("\nPress [ENTER] to continue")
         else:
-            defaults.generate_defaults.probe(self.constants.custom_model, False, self.constants)
+            defaults.generate_defaults(self.constants.custom_model, False, self.constants)
 
     def PatchVolume(self):
         utilities.cls()
@@ -1077,10 +1059,6 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
             title = ["Adjust Security Settings"]
             menu = tui_helpers.TUIMenu(title, "Please select an option: ", auto_number=True, top_level=True)
             options = [
-                # [
-                #     f"Set Apple Mobile File Integrity (AMFI):\tCurrently {self.constants.amfi_status}",
-                #     MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_amfi,
-                # ],
                 [
                     f"Set System Integrity Protection (SIP):\tCurrently {self.constants.custom_sip_value or self.constants.sip_status}",
                     MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).change_sip,
@@ -1156,7 +1134,7 @@ system_profiler SPHardwareDataType | grep 'Model Identifier'
                 [f"Disable Battery Throttling:\tCurrently {self.constants.disable_msr_power_ctl}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_battery_throttle],
                 [f"Disable XCPM:\t\tCurrently {self.constants.disable_xcpm}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_xcpm],
                 [f"Set Software Demux:\tCurrently {self.constants.software_demux}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_software_demux],
-                [f"Set 3rd Party SSD Support:\tCurrently {self.constants.allow_3rd_party_drives}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_3rd_party_drices],
+                [f"Set 3rd Party SSD Support:\tCurrently {self.constants.allow_3rd_party_drives}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_3rd_party_drives],
                 [f"Set FeatureUnlock: \tCurrently {self.constants.fu_status}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_fu_settings],
                 [f"Set NVRAM Write:\t\tCurrently {self.constants.nvram_write}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_nvram_write],
                 [f"Set Content Caching:\tCurrently {self.constants.set_content_caching}", MenuOptions(self.constants.custom_model or self.constants.computer.real_model, self.constants).set_cc_support],
@@ -1232,7 +1210,7 @@ B. Exit
                 # Add mirror of 11.2.3 for users who want it
                 options.append([f"macOS {mirror_data.Install_macOS_Big_Sur_11_2_3['Version']} ({mirror_data.Install_macOS_Big_Sur_11_2_3['Build']} - {utilities.human_fmt(mirror_data.Install_macOS_Big_Sur_11_2_3['Size'])} - {mirror_data.Install_macOS_Big_Sur_11_2_3['Source']})", lambda: self.download_install_assistant(mirror_data.Install_macOS_Big_Sur_11_2_3['Link'])])
                 for app in available_installers:
-                    if available_installers[app]['Variant'] in ["DeveloperSeed", "PublicSeed"]:
+                    if available_installers[app]['Variant'] in ["CustomerSeed", "DeveloperSeed", "PublicSeed"]:
                         variant = " Beta"
                     else:
                         variant = ""

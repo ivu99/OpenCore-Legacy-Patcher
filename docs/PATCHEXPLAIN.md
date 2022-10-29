@@ -8,7 +8,7 @@ In our patcher, there are numerous patches used to ensure a stable system. Here 
 
 ## OpenCore Settings
 
-Below is a run down of the main logic OpenCore Legacy Patcher uses to gain native support in macOS. Note OpenCore's configuration is documented within [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) as well as an online version provided by us:
+Below is a run down of the main logic OpenCore Legacy Patcher uses to gain native support in macOS. Note that OpenCore's configuration is documented within [OpenCorePkg](https://github.com/acidanthera/OpenCorePkg) as well as on an online version provided by us:
 
 * [OpenCorePkg Online Docs](https://dortania.github.io/docs/latest/Configuration.html)
 
@@ -17,7 +17,7 @@ Below is a run down of the main logic OpenCore Legacy Patcher uses to gain nativ
 ### ACPI -> Add
 
 * SSDT-CPBG
-  * Reason: Resolves Kernel Panic on Arrendale Macs in early Big Sur builds
+  * Reason: Resolves Kernel Panic on Arrandale Macs in early Big Sur builds
   * Logic: Disable dummy CPBG device in ACPI
   * Models: MacBookPro6,x and iMac11,x
 * SSDT-PCI
@@ -28,7 +28,7 @@ Below is a run down of the main logic OpenCore Legacy Patcher uses to gain nativ
   * Reason: Allows for software based deMUX disabling dGPUs in 2011 MacBook Pros
   * Logic: Sends power down request to dGPU via ACPI
   * Models: MacBookPro8,2 and MacBookPro8,3 with dead dGPUs
- 
+
 ### ACPI -> Patch
 
 * `EHCx` and `XHC1` Patches
@@ -39,13 +39,13 @@ Below is a run down of the main logic OpenCore Legacy Patcher uses to gain nativ
   * Reason: To be paired with SSDT-PCI
 * `_INI` to `XINI` Patch
   * Reason: To be paired with SSDT-DGPU
-  
+
 ### Booter -> Patch
 
 * Reroute `HW_BID` to `OC_BID`
   * Reason: Allows macOS installers to be used on unsupported models
   * Logic: Reroutes Board ID macOS checks to custom variable
-  * Models: All systems using VMM spoofing 
+  * Models: All systems using VMM spoofing
 
 ### Booter -> Quirks
 
@@ -146,7 +146,7 @@ Below is a run down of the main logic OpenCore Legacy Patcher uses to gain nativ
   * Reason: Used for proper output on machines with UGA firmware but GOP GPU
   * Logic: Provide GOP protocol instances on top of UGA protocol instances
   * Models: MacPro3,1, MacBook4,1 iMac7,1-8,1
-  
+
 :::
 
 ## Injected Kext
@@ -173,7 +173,7 @@ Below is an explanation of what Kexts OpenCore Legacy Patcher will inject into m
   * Reason: Patches BlueTool to enable bluetooth functionality on Monterey
   * Models: All models with pre-BCM94360 wireless cards or 3rd-party chipsets
 * Bluetooth-Spoof
-  * Reason: Injects extra data into certain bluetooth chipsets for recognition by the system 
+  * Reason: Injects extra data into certain bluetooth chipsets for recognition by the system
   * Models: Models with the BCM2070 or BCM2046 chipsets
 * FeatureUnlock (Night Shift)
   * Reason: Patches CoreBrightness.framework to enable Night Shift on unsupported models
@@ -195,7 +195,7 @@ Below is an explanation of what Kexts OpenCore Legacy Patcher will inject into m
   * Models: 2008 and older Marvel Ethernet require
 * CatalinaBCM5701Ethernet
   * Reason: Inject old Broadcom Ethernet kext to resolve networking in Big Sur
-  * Logic: Patch out conflicting symbols to not colide existing BCM5701Ethernet
+  * Logic: Patch out conflicting symbols to not collide existing BCM5701Ethernet
   * Models: 2011 and older Broadcom Ethernet require
 
 ### Maps
@@ -217,11 +217,11 @@ Below is an explanation of what Kexts OpenCore Legacy Patcher will inject into m
 
 * IO80211HighSierra
   * Reason: Re-inject Atheros wifi drivers from High Sierra
-  * Logic: Patch out conflicting symbols to not colide existing IO80211Family
+  * Logic: Patch out conflicting symbols to not collide existing IO80211Family
   * Models: Atheros cards
 * IO80211Mojave
   * Reason: Re-inject Broadcom wifi drivers from Mojave
-  * Logic: Patch out conflicting symbols to not colide existing IO80211Family
+  * Logic: Patch out conflicting symbols to not collide existing IO80211Family
   * Models: BCM94322
 
 ### Misc

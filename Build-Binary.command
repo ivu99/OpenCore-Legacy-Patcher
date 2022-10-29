@@ -40,7 +40,7 @@ class create_binary:
 
     def parse_arguments(self):
         parser = argparse.ArgumentParser(description='Builds OpenCore-Patcher binary')
-        parser.add_argument('--build_tui', action='store_true', help='Builds TUI binary, if ommited GUI binary is built')
+        parser.add_argument('--build_tui', action='store_true', help='Builds TUI binary, if omitted GUI binary is built')
         parser.add_argument('--branch', type=str, help='Git branch name')
         parser.add_argument('--commit', type=str, help='Git commit URL')
         parser.add_argument('--commit_date', type=str, help='Git commit date')
@@ -56,7 +56,7 @@ class create_binary:
         # macOS (using Python installed by homebrew (e.g. brew))
         if f"/usr/local/opt/python@3." in sys.executable:
             print(f"\t* NOTE: home(brew) python3 detected; using (sys.exec_prefix, python_path) ==> {sys.exec_prefix, python_path}")
-            # - under brew, pip3 will install pyinstall at:
+            # - under brew, pip3 will install pyinstaller at:
             #   /usr/local/lib/python3.9/site-packages/pyinstaller
             #   and /usr/local/bin/pyinstaller stub to load and run.
 
@@ -77,7 +77,7 @@ class create_binary:
         self.download_resources()
         if not self.args.build_tui:
             # payloads.dmg is only needed for GUI builds
-            self.generate_paylods_dmg()
+            self.generate_payloads_dmg()
 
     def postflight_processes(self):
         print("- Starting postflight processes")
@@ -117,12 +117,20 @@ class create_binary:
             "AutoPkg-Assets.pkg",
             "AutoPkg-Assets.pkg.zip",
             "InstallAssistant.pkg",
+            "InstallAssistant.pkg.integrityDataV1",
+            "KDK.dmg",
         ]
         print("- Deleting extra binaries...")
         for file in Path("payloads").glob(pattern="*"):
-            if file.name in delete_files:
+            if file.name in delete_files or file.name.startswith("OpenCore-Legacy-Patcher"):
                 print(f"  - Deleting {file.name}")
                 file.unlink()
+            elif (Path(file) / Path("Contents/Resources/createinstallmedia")).exists():
+                print(f"  - Deleting {file}")
+                subprocess.run(["rm", "-rf", file])
+            elif Path(file).is_dir() and file.name == "Universal-Binaries":
+                print(f"  - Deleting {file}")
+                subprocess.run(["rm", "-rf", file])
 
     def download_resources(self):
         patcher_support_pkg_version = constants.Constants().patcher_support_pkg_version
@@ -171,7 +179,7 @@ class create_binary:
                 print(mv_output.stderr.decode('utf-8'))
                 raise Exception("Move failed")
 
-    def generate_paylods_dmg(self):
+    def generate_payloads_dmg(self):
         if Path("./payloads.dmg").exists():
             if self.args.reset_binaries:
                 print("  - Removing old payloads.dmg")

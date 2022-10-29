@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Simple script to delete unnessary files from OpenCore and move into place
+# Simple script to delete unnecessary files from OpenCore and move into place
 # To use, simply :
 # - Download an OpenCore build
 # - Place the X64 folder in the /payloads/OpenCore folder
@@ -22,15 +22,31 @@ bad_drivers = [
     "AudioDxe.efi",
     "BiosVideo.efi",
     "CrScreenshotDxe.efi",
+    "Ext4Dxe.efi",
     "HiiDatabase.efi",
     "NvmExpressDxe.efi",
     "OpenHfsPlus.efi",
+    "OpenNtfsDxe.efi",
     "OpenPartitionDxe.efi",
     "OpenUsbKbDxe.efi",
+    "OpenVariableRuntimeDxe.efi",
     "Ps2KeyboardDxe.efi",
     "Ps2MouseDxe.efi",
+    "ToggleSipEntry.efi",
     "UsbMouseDxe.efi",
     "XhciDxe.efi",
+    "Udp4Dxe.efi",
+    "TcpDxe.efi",
+    "SnpDxe.efi",
+    "MnpDxe.efi",
+    "Ip4Dxe.efi",
+    "HttpUtilitiesDxe.efi",
+    "HttpDxe.efi",
+    "HttpBootDxe.efi",
+    "DpcDxe.efi",
+    "DnsDxe.efi",
+    "Dhcp4Dxe.efi",
+    "ArpDxe.efi",
 ]
 
 bad_tools = [
